@@ -350,13 +350,16 @@ class MainScreenComponent extends React.Component {
 				},
 			});
 		} else if (command.name === 'commandContentProperties') {
-			this.setState({
-				noteContentPropertiesDialogOptions: {
-					visible: true,
-					text: command.text,
-					lines: command.lines,
-				},
-			});
+			const note = await Note.load(this.props.selectedNoteId);
+			if (note) {
+				this.setState({
+					noteContentPropertiesDialogOptions: {
+						visible: true,
+						text: note.body,
+						// lines: command.lines,
+					},
+				});
+			}
 		} else if (command.name === 'commandShareNoteDialog') {
 			this.setState({
 				shareNoteDialogOptions: {
