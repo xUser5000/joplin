@@ -4,7 +4,7 @@ const { Header } = require('./Header.min.js');
 const { SideBar } = require('./SideBar.min.js');
 const { NoteList } = require('./NoteList.min.js');
 const { NoteText } = require('./NoteText.min.js');
-const NoteText2 = require('./NoteText2.js').default;
+const NoteEditor = require('./NoteEditor/NoteEditor.js').default;
 const { stateUtils } = require('lib/reducer.js');
 const { PromptDialog } = require('./PromptDialog.min.js');
 const NoteContentPropertiesDialog = require('./NoteContentPropertiesDialog.js').default;
@@ -723,7 +723,7 @@ class MainScreenComponent extends React.Component {
 
 		const isWYSIWYG = this.props.noteVisiblePanes.length && this.props.noteVisiblePanes[0] === 'wysiwyg';
 		const noteTextComp = isWYSIWYG ?
-			<NoteText2 editor="TinyMCE" style={styles.noteText} keyboardMode={keyboardMode} visiblePanes={this.props.noteVisiblePanes} />
+			<NoteEditor bodyEditor="TinyMCE" style={styles.noteText} keyboardMode={keyboardMode} visiblePanes={this.props.noteVisiblePanes} />
 			:
 			<NoteText style={styles.noteText} keyboardMode={keyboardMode} visiblePanes={this.props.noteVisiblePanes} />;
 

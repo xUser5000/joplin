@@ -2,14 +2,14 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand, resourcesStatus } from '../utils/NoteText';
+import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand, resourcesStatus } from '../../../utils/NoteText';
 
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
 const { reg } = require('lib/registry.js');
 const { _ } = require('lib/locale');
 const BaseItem = require('lib/models/BaseItem');
-const { themeStyle, buildStyle } = require('../../theme.js');
+const { themeStyle, buildStyle } = require('../../../../theme.js');
 
 interface TinyMCEProps {
 	style: any,
@@ -303,7 +303,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 					loaded: false,
 				},
 				{
-					src: 'gui/editors/TinyMCE/plugins/lists.js',
+					src: 'gui/NoteEditor/NoteBody/TinyMCE/plugins/lists.js',
 					id: 'tinyMceListsPluginScript',
 					loaded: false,
 				},
@@ -440,7 +440,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 				height: '100%',
 				resize: false,
 				icons: 'Joplin',
-				icons_url: 'gui/editors/TinyMCE/icons.js',
+				icons_url: 'gui/NoteEditor/NoteBody/TinyMCE/icons.js',
 				plugins: 'noneditable link joplinLists hr searchreplace codesample table',
 				noneditable_noneditable_class: 'joplin-editable', // Can be a regex too
 				valid_elements: '*[*]', // We already filter in sanitize_html
@@ -597,7 +597,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 				.map((a:any) => a.path)
 		).filter((path:string) => !loadedAssetFiles_.includes(path));
 
-		const jsFiles = ['gui/editors/TinyMCE/content_script.js'].concat(
+		const jsFiles = ['gui/NoteEditor/NoteBody/TinyMCE/content_script.js'].concat(
 			pluginAssets
 				.filter((a:any) => a.mime === 'application/javascript')
 				.map((a:any) => a.path)

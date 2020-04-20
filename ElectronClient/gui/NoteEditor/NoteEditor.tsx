@@ -2,15 +2,15 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import TinyMCE, { utils as tinyMceUtils } from './editors/TinyMCE';
-import PlainEditor, { utils as plainEditorUtils }  from './editors/PlainEditor';
+import TinyMCE, { utils as tinyMceUtils } from './NoteBody/TinyMCE/TinyMCE';
+import PlainEditor, { utils as plainEditorUtils }  from './NoteBody/PlainEditor/PlainEditor';
 import { connect } from 'react-redux';
-import AsyncActionQueue from '../lib/AsyncActionQueue';
-import MultiNoteActions from './MultiNoteActions';
+import AsyncActionQueue from '../../lib/AsyncActionQueue';
+import MultiNoteActions from '../MultiNoteActions';
 
 // eslint-disable-next-line no-unused-vars
-import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from './utils/NoteText';
-const { themeStyle, buildStyle } = require('../theme.js');
+import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../utils/NoteText';
+const { themeStyle, buildStyle } = require('../../theme.js');
 const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
 const markupLanguageUtils = require('lib/markupLanguageUtils');
@@ -42,7 +42,7 @@ interface NoteTextProps {
 	isProvisional: boolean,
 	editorNoteStatuses: any,
 	syncStarted: boolean,
-	editor: string,
+	bodyEditor: string,
 	windowCommand: any,
 }
 
@@ -368,7 +368,7 @@ function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNot
 	}, [windowCommand, dispatch, formNote]);
 }
 
-function NoteText2(props:NoteTextProps) {
+function NoteEditor(props:NoteTextProps) {
 	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
 	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {} });
 	const prevSyncStarted = usePrevious(props.syncStarted);
@@ -774,14 +774,14 @@ function NoteText2(props:NoteTextProps) {
 
 	let editor = null;
 
-	if (props.editor === 'TinyMCE') {
+	if (props.bodyEditor === 'TinyMCE') {
 		editor = <TinyMCE {...editorProps}/>;
 		textEditorUtils_ = tinyMceUtils;
-	} else if (props.editor === 'PlainEditor') {
+	} else if (props.bodyEditor === 'PlainEditor') {
 		editor = <PlainEditor {...editorProps}/>;
 		textEditorUtils_ = plainEditorUtils;
 	} else {
-		throw new Error(`Invalid editor: ${props.editor}`);
+		throw new Error(`Invalid editor: ${props.bodyEditor}`);
 	}
 
 	return (
@@ -811,7 +811,7 @@ function NoteText2(props:NoteTextProps) {
 }
 
 export {
-	NoteText2 as NoteText2Component,
+	NoteEditor as NoteEditorComponent,
 };
 
 const mapStateToProps = (state:any) => {
@@ -830,4 +830,4 @@ const mapStateToProps = (state:any) => {
 	};
 };
 
-export default connect(mapStateToProps)(NoteText2);
+export default connect(mapStateToProps)(NoteEditor);

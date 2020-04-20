@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import { DefaultEditorState, TextEditorUtils } from '../utils/NoteText';
+import { DefaultEditorState, TextEditorUtils } from '../../../utils/NoteText';
 
 export interface OnChangeEvent {
 	changeId: number,
