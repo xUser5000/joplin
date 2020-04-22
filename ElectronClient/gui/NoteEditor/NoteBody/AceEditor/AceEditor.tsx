@@ -121,8 +121,6 @@ function AceEditor(props:AceEditorProps, ref:any) {
 
 	const selectionRange = useSelectionRange(editor);
 
-	console.info('selectionRange', selectionRange);
-
 	function editor_scroll() {
 		// TODO
 	}
@@ -135,79 +133,6 @@ function AceEditor(props:AceEditorProps, ref:any) {
 	function webview_domReady() {
 
 	}
-
-	useImperativeHandle(ref, () => {
-		return {
-			content: () => body,
-			execCommand: async (cmd:EditorCommand) => {
-				if (!editor) return false;
-
-				reg.logger().debug('AceEditor: execCommand', cmd);
-
-				if (cmd.name === 'dropItems') {
-					if (cmd.value.type === 'notes') {
-						wrapSelectionWithStrings('', '', '', cmd.value.markdownTags.join('\n'));
-					} else if (cmd.value.type === 'files') {
-						const newBody = await editorUtils.commandAttachFileToBody(body, cmd.value.paths, { createFileURL: !!cmd.value.createFileURL });
-						aceEditor_change(newBody);
-					} else {
-						reg.logger().warn('AceEditor: unsupported drop item: ', cmd);
-					}
-				} else if (cmd.name === 'focus') {
-					editor.focus();
-				} else {
-					reg.logger().warn('AceEditor: unsupported Joplin command: ', cmd);
-					return false;
-				}
-
-				return true;
-			},
-		};
-	}, [editor, body]);
-
-	const onAfterEditorRender = useCallback(() => {
-		// const r = this.editor_.editor.renderer;
-		// this.editorMaxScrollTop_ = Math.max(0, r.layerConfig.maxHeight - r.$size.scrollerHeight);
-
-		// if (this.restoreScrollTop_ !== null) {
-		// 	this.editorSetScrollTop(this.restoreScrollTop_);
-		// 	this.restoreScrollTop_ = null;
-		// }
-	}, []);
-
-	const onEditorPaste = useCallback(async (event:any = null) => {
-		const formats = clipboard.availableFormats();
-		for (let i = 0; i < formats.length; i++) {
-			const format = formats[i].toLowerCase();
-			const formatType = format.split('/')[0];
-
-			const position = currentTextOffset(editor, body);
-
-			if (formatType === 'image') {
-				if (event) event.preventDefault();
-
-				const image = clipboard.readImage();
-
-				const fileExt = mimeUtils.toFileExtension(format);
-				const filePath = `${Setting.value('tempDir')}/${md5(Date.now())}.${fileExt}`;
-
-				await shim.writeImageToFile(image, format, filePath);
-				const newBody = await editorUtils.commandAttachFileToBody(body, [filePath], { position });
-				await shim.fsDriver().remove(filePath);
-
-				aceEditor_change(newBody);
-			}
-		}
-	}, [editor, body, aceEditor_change]);
-
-	const onEditorKeyDown = useCallback((event:any) => {
-		setLastKeys(prevLastKeys => {
-			const keys = prevLastKeys.slice();
-			keys.push(event.key);
-			while (keys.length > 2) keys.splice(0, 1);
-			return keys;
-		});
-	}, []);
 
 	const wrapSelectionWithStrings = useCallback((string1:string, string2:string = '', defaultText:string = '', replacementText:string = null, byLine:boolean = false) => {
 		if (!editor) return;
@@ -318,6 +243,95 @@ function AceEditor(props:AceEditorProps, ref:any) {
 
 		aceEditor_change(newBody);
 	}, [editor, selectionRange, body, aceEditor_change]);
+
+	useImperativeHandle(ref, () => {
+		return {
+			content: () => body,
+			execCommand: async (cmd:EditorCommand) => {
+				if (!editor) return false;
+
+				reg.logger().debug('AceEditor: execCommand', cmd);
+
+				let commandProcessed = true;
+
+				if (cmd.name === 'dropItems') {
+					if (cmd.value.type === 'notes') {
+						wrapSelectionWithStrings('', '', '', cmd.value.markdownTags.join('\n'));
+					} else if (cmd.value.type === 'files') {
+						const newBody = await editorUtils.commandAttachFileToBody(body, cmd.value.paths, { createFileURL: !!cmd.value.createFileURL });
+						aceEditor_change(newBody);
+					} else {
+						reg.logger().warn('AceEditor: unsupported drop item: ', cmd);
+					}
+				} else if (cmd.name === 'focus') {
+					editor.focus();
+				} else {
+					commandProcessed = false;
+				}
+
+				if (!commandProcessed) {
+					const commands:any = {
+						textBold: () => wrapSelectionWithStrings('**', '**', _('strong text')),
+						textItalic: () => wrapSelectionWithStrings('*', '*', _('emphasized text')),
+						insertText: (value:any) => wrapSelectionWithStrings(value),
+					};
+
+					if (commands[cmd.name]) {
+						commands[cmd.name](cmd.value);
+					} else {
+						reg.logger().warn('AceEditor: unsupported Joplin command: ', cmd);
+						return false;
+					}
+				}
+
+				return true;
+			},
+		};
+	}, [editor, body, wrapSelectionWithStrings]);
+
+	const onAfterEditorRender = useCallback(() => {
+		// const r = this.editor_.editor.renderer;
+		// this.editorMaxScrollTop_ = Math.max(0, r.layerConfig.maxHeight - r.$size.scrollerHeight);
+
+		// if (this.restoreScrollTop_ !== null) {
+		// 	this.editorSetScrollTop(this.restoreScrollTop_);
+		// 	this.restoreScrollTop_ = null;
+		// }
+	}, []);
+
+	const onEditorPaste = useCallback(async (event:any = null) => {
+		const formats = clipboard.availableFormats();
+		for (let i = 0; i < formats.length; i++) {
+			const format = formats[i].toLowerCase();
+			const formatType = format.split('/')[0];
+
+			const position = currentTextOffset(editor, body);
+
+			if (formatType === 'image') {
+				if (event) event.preventDefault();
+
+				const image = clipboard.readImage();
+
+				const fileExt = mimeUtils.toFileExtension(format);
+				const filePath = `${Setting.value('tempDir')}/${md5(Date.now())}.${fileExt}`;
+
+				await shim.writeImageToFile(image, format, filePath);
+				const newBody = await editorUtils.commandAttachFileToBody(body, [filePath], { position });
+				await shim.fsDriver().remove(filePath);
+
+				aceEditor_change(newBody);
+			}
+		}
+	}, [editor, body, aceEditor_change]);
+
+	const onEditorKeyDown = useCallback((event:any) => {
+		setLastKeys(prevLastKeys => {
+			const keys = prevLastKeys.slice();
+			keys.push(event.key);
+			while (keys.length > 2) keys.splice(0, 1);
+			return keys;
+		});
+	}, []);
 
 	const editorCutText = useCallback(() => {
 		const text = selectedText(selectionRange, body);

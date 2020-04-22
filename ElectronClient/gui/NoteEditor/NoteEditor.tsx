@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // eslint-disable-next-line no-unused-vars
 import TinyMCE, { utils as tinyMceUtils } from './NoteBody/TinyMCE/TinyMCE';
@@ -18,16 +18,18 @@ const markupLanguageUtils = require('lib/markupLanguageUtils');
 const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 const Setting = require('lib/models/Setting');
 const BaseItem = require('lib/models/BaseItem');
+const Folder = require('lib/models/Folder');
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const HtmlToMd = require('lib/HtmlToMd');
+const Toolbar = require('../Toolbar.min.js');
+// const NoteToolbar = require('../NoteToolbar/NoteToolbar.js').default;
 const { _ } = require('lib/locale');
 const Note = require('lib/models/Note.js');
 const BaseModel = require('lib/BaseModel.js');
 const Resource = require('lib/models/Resource.js');
 const { shim } = require('lib/shim');
-const TemplateUtils = require('lib/TemplateUtils');
 const { bridge } = require('electron').remote.require('./bridge');
-const { urlDecode } = require('lib/string-utils');
+const { urlDecode, substrWithEllipsis } = require('lib/string-utils');
 const urlUtils = require('lib/urlUtils');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
 const DecryptionWorker = require('lib/services/DecryptionWorker.js');
@@ -50,6 +52,9 @@ interface NoteTextProps {
 	syncStarted: boolean,
 	bodyEditor: string,
 	windowCommand: any,
+	folders: any[],
+	notesParentType: string,
+	historyNotes: any[],
 }
 
 interface FormNote {
@@ -135,6 +140,10 @@ function styles_(props:NoteTextProps) {
 			tinyMCE: {
 				width: '100%',
 				height: '100%',
+			},
+			toolbar: {
+				marginTop: 4,
+				marginBottom: 0,
 			},
 		};
 	});
@@ -347,7 +356,13 @@ function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNot
 			// TODO
 		} else if (command.name === 'insertTemplate') {
 			editorCmd.name = 'insertText',
-			editorCmd.value = TemplateUtils.render(command.value);
+			editorCmd.value = time.formatMsToLocal(new Date().getTime());
+		} else if (command.name === 'textBold') {
+			editorCmd.name = 'textBold';
+		} else if (command.name === 'textItalic') {
+			editorCmd.name = 'textItalic';
+		} else if (command.name === 'textLink') {
+			// fn = this.commandTextLink;
 		}
 
 		if (command.name === 'focusElement' && command.target === 'noteTitle') {
@@ -394,6 +409,10 @@ function NoteEditor(props:NoteTextProps) {
 	const isMountedRef = useRef(true);
 
 	useWindowCommand(props.windowCommand, props.dispatch, formNote, titleInputRef, editorRef);
+
+	const noteFolder = useMemo(() => {
+		return Folder.byId(props.folders, formNote.parent_id);
+	}, [props.folders, formNote.parent_id]);
 
 	// If the note has been modified in another editor, wait for it to be saved
 	// before loading it in this editor.
@@ -819,6 +838,162 @@ function NoteEditor(props:NoteTextProps) {
 		}
 	}, [props.dispatch]);
 
+	function createToolbarItems() {
+		const editorIsVisible = true;
+		// TODO: implement editorIsVisible
+		const toolbarItems = [];
+		if (noteFolder && ['Search', 'Tag', 'SmartFilter'].includes(props.notesParentType)) {
+			toolbarItems.push({
+				title: _('In: %s', substrWithEllipsis(noteFolder.title, 0, 16)),
+				iconName: 'fa-book',
+				onClick: () => {
+					props.dispatch({
+						type: 'FOLDER_AND_NOTE_SELECT',
+						folderId: noteFolder.id,
+						noteId: formNote.id,
+					});
+					Folder.expandTree(props.folders, noteFolder.parent_id);
+				},
+			});
+		}
+
+		if (props.historyNotes.length) {
+			toolbarItems.push({
+				tooltip: _('Back'),
+				iconName: 'fa-arrow-left',
+				onClick: () => {
+					if (!props.historyNotes.length) return;
+
+					const lastItem = props.historyNotes[props.historyNotes.length - 1];
+
+					props.dispatch({
+						type: 'FOLDER_AND_NOTE_SELECT',
+						folderId: lastItem.parent_id,
+						noteId: lastItem.id,
+						historyNoteAction: 'pop',
+					});
+				},
+			});
+		}
+
+		if (formNote.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN && editorIsVisible) {
+			toolbarItems.push({
+				tooltip: _('Bold'),
+				iconName: 'fa-bold',
+				onClick: () => {
+					props.dispatch({
+						type: 'WINDOW_COMMAND',
+						name: 'textBold',
+					});
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Italic'),
+				iconName: 'fa-italic',
+				onClick: () => {
+					props.dispatch({
+						type: 'WINDOW_COMMAND',
+						name: 'textItalic',
+					});
+				},
+			});
+
+			toolbarItems.push({
+				type: 'separator',
+			});
+
+			toolbarItems.push({
+				tooltip: _('Hyperlink'),
+				iconName: 'fa-link',
+				onClick: () => {
+					// return this.commandTextLink();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Code'),
+				iconName: 'fa-code',
+				onClick: () => {
+					// return this.commandTextCode();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Attach file'),
+				iconName: 'fa-paperclip',
+				onClick: () => {
+					// return this.commandAttachFile();
+				},
+			});
+
+			toolbarItems.push({
+				type: 'separator',
+			});
+
+			toolbarItems.push({
+				tooltip: _('Numbered List'),
+				iconName: 'fa-list-ol',
+				onClick: () => {
+					// return this.commandTextListOl();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Bulleted List'),
+				iconName: 'fa-list-ul',
+				onClick: () => {
+					// return this.commandTextListUl();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Checkbox'),
+				iconName: 'fa-check-square',
+				onClick: () => {
+					// return this.commandTextCheckbox();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Heading'),
+				iconName: 'fa-header',
+				onClick: () => {
+					// return this.commandTextHeading();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Horizontal Rule'),
+				iconName: 'fa-ellipsis-h',
+				onClick: () => {
+					// return this.commandTextHorizontalRule();
+				},
+			});
+
+			toolbarItems.push({
+				tooltip: _('Insert Date Time'),
+				iconName: 'fa-calendar-plus-o',
+				onClick: () => {
+					props.dispatch({
+						type: 'WINDOW_COMMAND',
+						name: 'insertDateTime',
+					});
+				},
+			});
+
+			toolbarItems.push({
+				type: 'separator',
+			});
+		}
+
+		return toolbarItems;
+	}
+
+	function renderToolbar() {
+		return <Toolbar style={styles.toolbar} items={createToolbarItems()} />;
+	}
+
 	const introductionPostLinkClick = useCallback(() => {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
 	}, []);
@@ -881,12 +1056,12 @@ function NoteEditor(props:NoteTextProps) {
 						value={formNote.title}
 					/>
 				</div>
+				{renderToolbar()}
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
 				</div>
 			</div>
 		</div>
-
 	);
 }
 
@@ -900,6 +1075,7 @@ const mapStateToProps = (state:any) => {
 	return {
 		noteId: noteId,
 		notes: state.notes,
+		folders: state.folders,
 		selectedNoteIds: state.selectedNoteIds,
 		isProvisional: state.provisionalNoteIds.includes(noteId),
 		editorNoteStatuses: state.editorNoteStatuses,
@@ -907,6 +1083,8 @@ const mapStateToProps = (state:any) => {
 		theme: state.settings.theme,
 		watchedNoteFiles: state.watchedNoteFiles,
 		windowCommand: state.windowCommand,
+		notesParentType: state.notesParentType,
+		historyNotes: state.historyNotes,
 	};
 };
 
