@@ -52,9 +52,12 @@ Tools/commit_hook.txt
 # AUTO-GENERATED - EXCLUDED TYPESCRIPT BUILD
 ElectronClient/gui/MultiNoteActions.js
 ElectronClient/gui/NoteContentPropertiesDialog.js
+ElectronClient/gui/NoteEditor/NoteBody/AceEditor/AceEditor.js
+ElectronClient/gui/NoteEditor/NoteBody/AceEditor/utils/index.js
 ElectronClient/gui/NoteEditor/NoteBody/PlainEditor/PlainEditor.js
 ElectronClient/gui/NoteEditor/NoteBody/TinyMCE/TinyMCE.js
 ElectronClient/gui/NoteEditor/NoteEditor.js
+ElectronClient/gui/NoteEditor/utils/index.js
 ElectronClient/gui/NoteToolbar/NoteToolbar.js
 ElectronClient/gui/ResourceScreen.js
 ElectronClient/gui/ShareNoteDialog.js

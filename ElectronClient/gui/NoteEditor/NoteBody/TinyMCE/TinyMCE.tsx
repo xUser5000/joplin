@@ -35,6 +35,7 @@ function markupRenderOptions(override:any = null) {
 				linkRenderingType: 2,
 			},
 		},
+		replaceResourceInternalToExternalLinks: true,
 		...override,
 	};
 }
@@ -107,6 +108,9 @@ function enableTextAreaTab(enable:boolean) {
 export const utils:TextEditorUtils = {
 	editorContentToHtml(content:any):Promise<string> {
 		return content ? content : '';
+	},
+	editorContentFormat():string {
+		return 'html';
 	},
 };
 
@@ -194,16 +198,16 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 
 		if (nodeName === 'A' && (event.ctrlKey || event.metaKey)) {
 			const href = event.target.getAttribute('href');
-			const joplinUrl = href.indexOf('joplin://') === 0 ? href : null;
+			// const joplinUrl = href.indexOf('joplin://') === 0 ? href : null;
 
-			if (joplinUrl) {
-				props.onMessage({
-					name: 'openInternal',
-					args: {
-						url: joplinUrl,
-					},
-				});
-			} else if (href.indexOf('#') === 0) {
+			// if (joplinUrl) {
+			// 	props.onMessage({
+			// 		name: 'openInternal',
+			// 		args: {
+			// 			url: joplinUrl,
+			// 		},
+			// 	});
+			if (href.indexOf('#') === 0) {
 				const anchorName = href.substr(1);
 				const anchor = editor.getDoc().getElementById(anchorName);
 				if (anchor) {
@@ -213,11 +217,17 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 				}
 			} else {
 				props.onMessage({
-					name: 'openExternal',
+					name: 'openUrl',
 					args: {
 						url: href,
 					},
 				});
+				// props.onMessage({
+				// 	name: 'openExternal',
+				// 	args: {
+				// 		url: href,
+				// 	},
+				// });
 			}
 		}
 	}, [editor, props.onMessage]);

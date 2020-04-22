@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 // eslint-disable-next-line no-unused-vars
 import TinyMCE, { utils as tinyMceUtils } from './NoteBody/TinyMCE/TinyMCE';
 import PlainEditor, { utils as plainEditorUtils }  from './NoteBody/PlainEditor/PlainEditor';
+import AceEditor, { utils as aceEditorUtils }  from './NoteBody/AceEditor/AceEditor';
 import { connect } from 'react-redux';
 import AsyncActionQueue from '../../lib/AsyncActionQueue';
 import MultiNoteActions from '../MultiNoteActions';
@@ -30,6 +31,11 @@ const { urlDecode } = require('lib/string-utils');
 const urlUtils = require('lib/urlUtils');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
 const DecryptionWorker = require('lib/services/DecryptionWorker.js');
+const Menu = bridge().Menu;
+const MenuItem = bridge().MenuItem;
+const fs = require('fs-extra');
+const { clipboard } = require('electron');
+const { toSystemSlashes } = require('lib/path-utils');
 
 interface NoteTextProps {
 	style: any,
@@ -192,13 +198,21 @@ async function formNoteToNote(formNote:FormNote):Promise<any> {
 	const newNote:any = Object.assign({}, formNote);
 
 	if ('bodyEditorContent' in formNote) {
-		const html = await textEditorUtils_.editorContentToHtml(formNote.bodyEditorContent);
-		if (formNote.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN) {
-			newNote.body = await htmlToMarkdown(html);
+		const editorContentFormat = textEditorUtils_.editorContentFormat();
+
+		if (editorContentFormat === 'html') {
+			const html = await textEditorUtils_.editorContentToHtml(formNote.bodyEditorContent);
+
+			if (formNote.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN) {
+				newNote.body = await htmlToMarkdown(html);
+			} else {
+				newNote.body = html;
+				newNote.body = await Note.replaceResourceExternalToInternalLinks(newNote.body, { useAbsolutePaths: true });
+				if (formNote.originalCss) newNote.body = `<style>${formNote.originalCss}</style>\n${newNote.body}`;
+			}
 		} else {
-			newNote.body = html;
-			newNote.body = await Note.replaceResourceExternalToInternalLinks(newNote.body, { useAbsolutePaths: true });
-			if (formNote.originalCss) newNote.body = `<style>${formNote.originalCss}</style>\n${newNote.body}`;
+			newNote.body = formNote.bodyEditorContent;
+			// TODO: TEST WITH HTML notes
 		}
 	}
 
@@ -388,11 +402,24 @@ function NoteEditor(props:NoteTextProps) {
 	const styles = styles_(props);
 
 	const markupToHtml = useCallback(async (markupLanguage:number, md:string, options:any = null):Promise<any> => {
+		options = {
+			replaceResourceInternalToExternalLinks: false,
+			...options,
+		};
+
 		md = md || '';
 
 		const theme = themeStyle(props.theme);
 
-		md = await Note.replaceResourceInternalToExternalLinks(md, { useAbsolutePaths: true });
+		let resources = {};
+
+		if (options.replaceResourceInternalToExternalLinks) {
+			md = await Note.replaceResourceInternalToExternalLinks(md, { useAbsolutePaths: true });
+		} else {
+			resources = await attachedResources(md);
+		}
+
+		delete options.replaceResourceInternalToExternalLinks;
 
 		const markupToHtml = markupLanguageUtils.newMarkupToHtml({
 			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
@@ -401,8 +428,7 @@ function NoteEditor(props:NoteTextProps) {
 		const result = await markupToHtml.render(markupLanguage, md, theme, Object.assign({}, {
 			codeTheme: theme.codeThemeCss,
 			// userCss: this.props.customCss ? this.props.customCss : '',
-			// resources: await shared.attachedResources(noteBody),
-			resources: [],
+			resources: resources,
 			postMessageSyntax: 'ipcProxySendToHost',
 			splitted: true,
 			externalAssetsOnly: true,
@@ -594,6 +620,49 @@ function NoteEditor(props:NoteTextProps) {
 		}
 	}, [handleProvisionalFlag, formNote]);
 
+	const onDrop = useCallback(async event => {
+		const dt = event.dataTransfer;
+		const createFileURL = event.altKey;
+
+		if (dt.types.indexOf('text/x-jop-note-ids') >= 0) {
+			const noteIds = JSON.parse(dt.getData('text/x-jop-note-ids'));
+			const noteMarkdownTags = [];
+			for (let i = 0; i < noteIds.length; i++) {
+				const note = await Note.load(noteIds[i]);
+				noteMarkdownTags.push(Note.markdownTag(note));
+			}
+
+			editorRef.current.execCommand({
+				name: 'dropItems',
+				value: {
+					type: 'notes',
+					markdownTags: noteMarkdownTags,
+				},
+			});
+
+			return;
+		}
+
+		const files = dt.files;
+		if (files && files.length) {
+			const paths = [];
+			for (let i = 0; i < files.length; i++) {
+				const file = files[i];
+				if (!file.path) continue;
+				paths.push(file.path);
+			}
+
+			editorRef.current.execCommand({
+				name: 'dropItems',
+				value: {
+					type: 'files',
+					paths: paths,
+					createFileURL: createFileURL,
+				},
+			});
+		}
+	}, []);
+
 	const onBodyChange = useCallback((event:OnChangeEvent) => onFieldChange('body', event.content, event.changeId), [onFieldChange]);
 
 	const onTitleChange = useCallback((event:any) => onFieldChange('title', event.target.value), [onFieldChange]);
@@ -617,12 +686,17 @@ function NoteEditor(props:NoteTextProps) {
 	}, [formNote, handleProvisionalFlag]);
 
 	const onMessage = useCallback(async (event:any) => {
-		const msg = event.name;
+		const msg = event.channel ? event.channel : '';
 		const args = event.args;
+		const arg0 = args && args.length >= 1 ? args[0] : null;
 
-		console.info('onMessage', msg, args);
+		if (msg !== 'percentScroll') console.info(`Got ipc-message: ${msg}`, args);
 
-		if (msg === 'setMarkerCount') {
+		if (msg.indexOf('error:') === 0) {
+			const s = msg.split(':');
+			s.splice(0, 1);
+			reg.logger().error(s.join(':'));
+		} else if (msg === 'setMarkerCount') {
 			// const ls = Object.assign({}, this.state.localSearch);
 			// ls.resultCount = arg0;
 			// ls.searching = false;
@@ -635,71 +709,71 @@ function NoteEditor(props:NoteTextProps) {
 			// this.ignoreNextEditorScroll_ = true;
 			// this.setEditorPercentScroll(arg0);
 		} else if (msg === 'contextMenu') {
-			// const itemType = arg0 && arg0.type;
+			const itemType = arg0 && arg0.type;
 
-			// const menu = new Menu();
+			const menu = new Menu();
 
-			// if (itemType === 'image' || itemType === 'resource') {
-			// 	const resource = await Resource.load(arg0.resourceId);
-			// 	const resourcePath = Resource.fullPath(resource);
+			if (itemType === 'image' || itemType === 'resource') {
+				const resource = await Resource.load(arg0.resourceId);
+				const resourcePath = Resource.fullPath(resource);
 
-			// 	menu.append(
-			// 		new MenuItem({
-			// 			label: _('Open...'),
-			// 			click: async () => {
-			// 				const ok = bridge().openExternal(`file://${resourcePath}`);
-			// 				if (!ok) bridge().showErrorMessageBox(_('This file could not be opened: %s', resourcePath));
-			// 			},
-			// 		})
-			// 	);
+				menu.append(
+					new MenuItem({
+						label: _('Open...'),
+						click: async () => {
+							const ok = bridge().openExternal(`file://${resourcePath}`);
+							if (!ok) bridge().showErrorMessageBox(_('This file could not be opened: %s', resourcePath));
+						},
+					})
+				);
 
-			// 	menu.append(
-			// 		new MenuItem({
-			// 			label: _('Save as...'),
-			// 			click: async () => {
-			// 				const filePath = bridge().showSaveDialog({
-			// 					defaultPath: resource.filename ? resource.filename : resource.title,
-			// 				});
-			// 				if (!filePath) return;
-			// 				await fs.copy(resourcePath, filePath);
-			// 			},
-			// 		})
-			// 	);
+				menu.append(
+					new MenuItem({
+						label: _('Save as...'),
+						click: async () => {
+							const filePath = bridge().showSaveDialog({
+								defaultPath: resource.filename ? resource.filename : resource.title,
+							});
+							if (!filePath) return;
+							await fs.copy(resourcePath, filePath);
+						},
+					})
+				);
 
-			// 	menu.append(
-			// 		new MenuItem({
-			// 			label: _('Copy path to clipboard'),
-			// 			click: async () => {
-			// 				clipboard.writeText(toSystemSlashes(resourcePath));
-			// 			},
-			// 		})
-			// 	);
-			// } else if (itemType === 'text') {
-			// 	menu.append(
-			// 		new MenuItem({
-			// 			label: _('Copy'),
-			// 			click: async () => {
-			// 				clipboard.writeText(arg0.textToCopy);
-			// 			},
-			// 		})
-			// 	);
-			// } else if (itemType === 'link') {
-			// 	menu.append(
-			// 		new MenuItem({
-			// 			label: _('Copy Link Address'),
-			// 			click: async () => {
-			// 				clipboard.writeText(arg0.textToCopy);
-			// 			},
-			// 		})
-			// 	);
-			// } else {
-			// 	reg.logger().error(`Unhandled item type: ${itemType}`);
-			// 	return;
-			// }
+				menu.append(
+					new MenuItem({
+						label: _('Copy path to clipboard'),
+						click: async () => {
+							clipboard.writeText(toSystemSlashes(resourcePath));
+						},
+					})
+				);
+			} else if (itemType === 'text') {
+				menu.append(
+					new MenuItem({
+						label: _('Copy'),
+						click: async () => {
+							clipboard.writeText(arg0.textToCopy);
+						},
+					})
+				);
+			} else if (itemType === 'link') {
+				menu.append(
+					new MenuItem({
+						label: _('Copy Link Address'),
+						click: async () => {
+							clipboard.writeText(arg0.textToCopy);
+						},
+					})
+				);
+			} else {
+				reg.logger().error(`Unhandled item type: ${itemType}`);
+				return;
+			}
 
-			// menu.popup(bridge().window());
-		} else if (msg === 'openInternal') {
-			const resourceUrlInfo = urlUtils.parseResourceUrl(args.url);
+			menu.popup(bridge().window());
+		} else if (msg.indexOf('joplin://') === 0) {
+			const resourceUrlInfo = urlUtils.parseResourceUrl(msg);
 			const itemId = resourceUrlInfo.itemId;
 			const item = await BaseItem.loadItemById(itemId);
 
@@ -723,24 +797,27 @@ function NoteEditor(props:NoteTextProps) {
 					folderId: item.parent_id,
 					noteId: item.id,
 					hash: resourceUrlInfo.hash,
-					historyAction: 'goto',
+					// historyNoteAction: {
+					// 	id: this.state.note.id,
+					// 	parent_id: this.state.note.parent_id,
+					// },
 				});
 			} else {
 				throw new Error(`Unsupported item type: ${item.type_}`);
 			}
+		} else if (urlUtils.urlProtocol(msg)) {
+			if (msg.indexOf('file://') === 0) {
+				// When using the file:// protocol, openExternal doesn't work (does nothing) with URL-encoded paths
+				require('electron').shell.openExternal(urlDecode(msg));
+			} else {
+				require('electron').shell.openExternal(msg);
+			}
 		} else if (msg.indexOf('#') === 0) {
 			// This is an internal anchor, which is handled by the WebView so skip this case
-		} else if (msg === 'openExternal') {
-			if (args.url.indexOf('file://') === 0) {
-				// When using the file:// protocol, openExternal doesn't work (does nothing) with URL-encoded paths
-				bridge().openExternal(urlDecode(args.url));
-			} else {
-				bridge().openExternal(args.url);
-			}
 		} else {
 			bridge().showErrorMessageBox(_('Unsupported link or message: %s', msg));
 		}
-	}, []);
+	}, [props.dispatch]);
 
 	const introductionPostLinkClick = useCallback(() => {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
@@ -780,12 +857,15 @@ function NoteEditor(props:NoteTextProps) {
 	} else if (props.bodyEditor === 'PlainEditor') {
 		editor = <PlainEditor {...editorProps}/>;
 		textEditorUtils_ = plainEditorUtils;
+	} else if (props.bodyEditor === 'AceEditor') {
+		editor = <AceEditor {...editorProps}/>;
+		textEditorUtils_ = aceEditorUtils;
 	} else {
 		throw new Error(`Invalid editor: ${props.bodyEditor}`);
 	}
 
 	return (
-		<div style={props.style}>
+		<div style={props.style} onDrop={onDrop}>
 			<div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 				<div style={styles.warningBanner}>
 					This is an experimental WYSIWYG editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information.

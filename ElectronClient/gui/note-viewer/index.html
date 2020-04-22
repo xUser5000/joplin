@@ -105,8 +105,10 @@
 
 			for (let i = 0; i < assets.length; i++) {
 				const asset = assets[i];
-				if (pluginAssetsAdded_[asset.name]) continue;
-				pluginAssetsAdded_[asset.name] = true;
+
+				const assetId = asset.name ? asset.name : asset.path;
+				if (pluginAssetsAdded_[assetId]) continue;
+				pluginAssetsAdded_[assetId] = true;
 
 				if (asset.mime === 'application/javascript') {
 					const script = document.createElement('script');
