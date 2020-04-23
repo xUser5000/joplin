@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHand
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../../../utils/NoteText';
 import * as editorUtils from '../../utils';
 import { textOffsetToCursorPosition, lineLeftSpaces, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
+import Toolbar from './Toolbar';
 
 const { /* themeStyle,*/ buildStyle } = require('../../../../theme.js');
 const AceEditorReact = require('react-ace').default;
@@ -22,6 +23,7 @@ const MenuItem = bridge().MenuItem;
 const markdownUtils = require('lib/markdownUtils');
 const { _ } = require('lib/locale');
 const { reg } = require('lib/registry.js');
+const dialogs = require('../../../dialogs');
 
 require('brace/mode/markdown');
 // https://ace.c9.io/build/kitchen-sink.html
@@ -47,6 +49,7 @@ interface AceEditorProps {
 	attachResources: Function,
 	joplinHtml: Function,
 	disabled: boolean,
+	dispatch: Function,
 }
 
 interface RenderedBody {
@@ -80,8 +83,19 @@ function styles_(props:AceEditorProps) {
 			root: {
 				position: 'relative',
 				display: 'flex',
-				flexDirection: 'row',
+				flexDirection: 'column',
 				...props.style,
+			},
+			rowToolbar: {
+				position: 'relative',
+				display: 'flex',
+				flexDirection: 'row',
+			},
+			rowEditor: {
+				position: 'relative',
+				display: 'flex',
+				flexDirection: 'row',
+				flex: 1,
 			},
 			viewer: {
 				display: 'flex',
@@ -91,6 +105,9 @@ function styles_(props:AceEditorProps) {
 			},
 			editor: {
 				display: 'flex',
+				width: 'auto',
+				height: 'auto',
+				flex: 1,
 				overflowY: 'hidden',
 				paddingTop: 0,
 				lineHeight: `${theme.textAreaLineHeight}px`,
@@ -273,7 +290,30 @@ function AceEditor(props:AceEditorProps, ref:any) {
 					const commands:any = {
 						textBold: () => wrapSelectionWithStrings('**', '**', _('strong text')),
 						textItalic: () => wrapSelectionWithStrings('*', '*', _('emphasized text')),
+						textLink: async () => {
+							const url = await dialogs.prompt(_('Insert Hyperlink'));
+							if (url) wrapSelectionWithStrings('[', `](${url})`);
+						},
+						textCode: () => {
+							const selection = textOffsetSelection(selectionRange, body);
+							const string = body.substr(selection.start, selection.end - selection.start);
+
+							// Look for newlines
+							const match = string.match(/\r?\n/);
+
+							if (match && match.length > 0) {
+								if (string.startsWith('```') && string.endsWith('```')) {
+									wrapSelectionWithStrings('', '', '', string.substr(4, selection.end - selection.start - 8));
+								} else {
+									wrapSelectionWithStrings(`\`\`\`${match[0]}`, `${match[0]}\`\`\``);
+								}
+							}
+						},
 						insertText: (value:any) => wrapSelectionWithStrings(value),
+						attachFile: async () => {
+							const newBody = await editorUtils.commandAttachFileToBody(body);
+							if (newBody) aceEditor_change(newBody);
+						},
 					};
 
 					if (commands[cmd.name]) {
@@ -287,7 +327,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 				return true;
 			},
 		};
-	}, [editor, body, wrapSelectionWithStrings]);
+	}, [editor, body, wrapSelectionWithStrings, selectionRange]);
 
 	const onAfterEditorRender = useCallback(() => {
 		// const r = this.editor_.editor.renderer;
@@ -446,6 +486,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 
 		// Disable Markdown auto-completion (eg. auto-adding a dash after a line with a dash.
 		// https://github.com/ajaxorg/ace/issues/2754
+		// @ts-ignore: Keep the function signature as-is despite unusued arguments
 		editor.getSession().getMode().getNextLineIndent = function(state:any, line:string) {
 			const ls = lastKeys;
 			if (ls.length >= 2 && ls[ls.length - 1] === 'Enter' && ls[ls.length - 2] === 'Enter') return this.$getIndent(line);
@@ -557,31 +598,39 @@ function AceEditor(props:AceEditorProps, ref:any) {
 
 	return (
 		<div style={styles.root}>
-			<AceEditorReact
-				value={body}
-				mode={props.defaultEditorState.markupLanguage === Note.MARKUP_LANGUAGE_HTML ? 'text' : 'markdown'}
-				theme={styles.editor.editorTheme}
-				style={styles.editor}
-				fontSize={styles.editor.fontSize}
-				showGutter={false}
-				name="note-editor"
-				wrapEnabled={true}
-				onScroll={editor_scroll}
-				onChange={aceEditor_change}
-				showPrintMargin={false}
-				onLoad={aceEditor_load}
-				// Enable/Disable the autoclosing braces
-				setOptions={{
-					behavioursEnabled: Setting.value('editor.autoMatchingBraces'),
-					useSoftTabs: false }}
-				// Disable warning: "Automatically scrolling cursor into view after
-				// selection change this will be disabled in the next version set
-				// editor.$blockScrolling = Infinity to disable this message"
-				editorProps={{ $blockScrolling: Infinity }}
-				// This is buggy (gets outside the container)
-				highlightActiveLine={false}
-			/>
-			{viewer}
+			<div style={styles.rowToolbar}>
+				<Toolbar
+					theme={props.theme}
+					dispatch={props.dispatch}
+				/>
+			</div>
+			<div style={styles.rowEditor}>
+				<AceEditorReact
+					value={body}
+					mode={props.defaultEditorState.markupLanguage === Note.MARKUP_LANGUAGE_HTML ? 'text' : 'markdown'}
+					theme={styles.editor.editorTheme}
+					style={styles.editor}
+					fontSize={styles.editor.fontSize}
+					showGutter={false}
+					name="note-editor"
+					wrapEnabled={true}
+					onScroll={editor_scroll}
+					onChange={aceEditor_change}
+					showPrintMargin={false}
+					onLoad={aceEditor_load}
+					// Enable/Disable the autoclosing braces
+					setOptions={{
+						behavioursEnabled: Setting.value('editor.autoMatchingBraces'),
+						useSoftTabs: false }}
+					// Disable warning: "Automatically scrolling cursor into view after
+					// selection change this will be disabled in the next version set
+					// editor.$blockScrolling = Infinity to disable this message"
+					editorProps={{ $blockScrolling: Infinity }}
+					// This is buggy (gets outside the container)
+					highlightActiveLine={false}
+				/>
+				{viewer}
+			</div>
 		</div>
 	);
 }

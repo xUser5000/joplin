@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 // eslint-disable-next-line no-unused-vars
 import TinyMCE, { utils as tinyMceUtils } from './NoteBody/TinyMCE/TinyMCE';
@@ -11,6 +11,8 @@ import MultiNoteActions from '../MultiNoteActions';
 
 // eslint-disable-next-line no-unused-vars
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../utils/NoteText';
+// eslint-disable-next-line no-unused-vars
+import { FormNote } from './utils';
 const { themeStyle, buildStyle } = require('../../theme.js');
 const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
@@ -18,18 +20,15 @@ const markupLanguageUtils = require('lib/markupLanguageUtils');
 const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 const Setting = require('lib/models/Setting');
 const BaseItem = require('lib/models/BaseItem');
-const Folder = require('lib/models/Folder');
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const HtmlToMd = require('lib/HtmlToMd');
-const Toolbar = require('../Toolbar.min.js');
-// const NoteToolbar = require('../NoteToolbar/NoteToolbar.js').default;
 const { _ } = require('lib/locale');
 const Note = require('lib/models/Note.js');
 const BaseModel = require('lib/BaseModel.js');
 const Resource = require('lib/models/Resource.js');
 const { shim } = require('lib/shim');
 const { bridge } = require('electron').remote.require('./bridge');
-const { urlDecode, substrWithEllipsis } = require('lib/string-utils');
+const { urlDecode } = require('lib/string-utils');
 const urlUtils = require('lib/urlUtils');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
 const DecryptionWorker = require('lib/services/DecryptionWorker.js');
@@ -55,48 +54,6 @@ interface NoteTextProps {
 	folders: any[],
 	notesParentType: string,
 	historyNotes: any[],
-}
-
-interface FormNote {
-	id: string,
-	title: string,
-	parent_id: string,
-	is_todo: number,
-	bodyEditorContent?: any,
-	markup_language: number,
-
-	hasChanged: boolean,
-
-	// Getting the content from the editor can be a slow process because that content
-	// might need to be serialized first. For that reason, the wrapped editor (eg TinyMCE)
-	// first emits onWillChange when there is a change. That event does not include the
-	// editor content. After a few milliseconds (eg if the user stops typing for long
-	// enough), the editor emits onChange, and that event will include the editor content.
-	//
-	// Both onWillChange and onChange events include a changeId property which is used
-	// to link the two events together. It is used for example to detect if a new note
-	// was loaded before the current note was saved - in that case the changeId will be
-	// different. The two properties bodyWillChangeId and bodyChangeId are used to save
-	// this info with the currently loaded note.
-	//
-	// The willChange/onChange events also allow us to handle the case where the user
-	// types something then quickly switch a different note. In that case, bodyWillChangeId
-	// is set, thus we know we should save the note, even though we won't receive the
-	// onChange event.
-	bodyWillChangeId: number
-	bodyChangeId: number,
-
-	saveActionQueue: AsyncActionQueue,
-
-	// Note with markup_language = HTML have a block of CSS at the start, which is used
-	// to preserve the style from the original (web-clipped) page. When sending the note
-	// content to TinyMCE, we only send the actual HTML, without this CSS. The CSS is passed
-	// via a file in pluginAssets. This is because TinyMCE would not render the style otherwise.
-	// However, when we get back the HTML from TinyMCE, we need to reconstruct the original note.
-	// Since the CSS used by TinyMCE has been lost (since it's in a temp CSS file), we keep that
-	// original CSS here. It's used in formNoteToNote to rebuild the note body.
-	// We can keep it here because we know TinyMCE will not modify it anyway.
-	originalCss: string,
 }
 
 const defaultNote = ():FormNote => {
@@ -353,7 +310,7 @@ function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNot
 		} else if (command.name === 'showLocalSearch') {
 			editorCmd.name = 'search';
 		} else if (command.name === 'textCode') {
-			// TODO
+			editorCmd.name = 'textCode';
 		} else if (command.name === 'insertTemplate') {
 			editorCmd.name = 'insertText',
 			editorCmd.value = time.formatMsToLocal(new Date().getTime());
@@ -362,7 +319,9 @@ function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNot
 		} else if (command.name === 'textItalic') {
 			editorCmd.name = 'textItalic';
 		} else if (command.name === 'textLink') {
-			// fn = this.commandTextLink;
+			editorCmd.name = 'textLink';
+		} else if (command.name === 'attachFile') {
+			editorCmd.name = 'attachFile';
 		}
 
 		if (command.name === 'focusElement' && command.target === 'noteTitle') {
@@ -410,9 +369,9 @@ function NoteEditor(props:NoteTextProps) {
 
 	useWindowCommand(props.windowCommand, props.dispatch, formNote, titleInputRef, editorRef);
 
-	const noteFolder = useMemo(() => {
-		return Folder.byId(props.folders, formNote.parent_id);
-	}, [props.folders, formNote.parent_id]);
+	// const noteFolder = useMemo(() => {
+	// 	return Folder.byId(props.folders, formNote.parent_id);
+	// }, [props.folders, formNote.parent_id]);
 
 	// If the note has been modified in another editor, wait for it to be saved
 	// before loading it in this editor.
@@ -838,162 +797,6 @@ function NoteEditor(props:NoteTextProps) {
 		}
 	}, [props.dispatch]);
 
-	function createToolbarItems() {
-		const editorIsVisible = true;
-		// TODO: implement editorIsVisible
-		const toolbarItems = [];
-		if (noteFolder && ['Search', 'Tag', 'SmartFilter'].includes(props.notesParentType)) {
-			toolbarItems.push({
-				title: _('In: %s', substrWithEllipsis(noteFolder.title, 0, 16)),
-				iconName: 'fa-book',
-				onClick: () => {
-					props.dispatch({
-						type: 'FOLDER_AND_NOTE_SELECT',
-						folderId: noteFolder.id,
-						noteId: formNote.id,
-					});
-					Folder.expandTree(props.folders, noteFolder.parent_id);
-				},
-			});
-		}
-
-		if (props.historyNotes.length) {
-			toolbarItems.push({
-				tooltip: _('Back'),
-				iconName: 'fa-arrow-left',
-				onClick: () => {
-					if (!props.historyNotes.length) return;
-
-					const lastItem = props.historyNotes[props.historyNotes.length - 1];
-
-					props.dispatch({
-						type: 'FOLDER_AND_NOTE_SELECT',
-						folderId: lastItem.parent_id,
-						noteId: lastItem.id,
-						historyNoteAction: 'pop',
-					});
-				},
-			});
-		}
-
-		if (formNote.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN && editorIsVisible) {
-			toolbarItems.push({
-				tooltip: _('Bold'),
-				iconName: 'fa-bold',
-				onClick: () => {
-					props.dispatch({
-						type: 'WINDOW_COMMAND',
-						name: 'textBold',
-					});
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Italic'),
-				iconName: 'fa-italic',
-				onClick: () => {
-					props.dispatch({
-						type: 'WINDOW_COMMAND',
-						name: 'textItalic',
-					});
-				},
-			});
-
-			toolbarItems.push({
-				type: 'separator',
-			});
-
-			toolbarItems.push({
-				tooltip: _('Hyperlink'),
-				iconName: 'fa-link',
-				onClick: () => {
-					// return this.commandTextLink();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Code'),
-				iconName: 'fa-code',
-				onClick: () => {
-					// return this.commandTextCode();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Attach file'),
-				iconName: 'fa-paperclip',
-				onClick: () => {
-					// return this.commandAttachFile();
-				},
-			});
-
-			toolbarItems.push({
-				type: 'separator',
-			});
-
-			toolbarItems.push({
-				tooltip: _('Numbered List'),
-				iconName: 'fa-list-ol',
-				onClick: () => {
-					// return this.commandTextListOl();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Bulleted List'),
-				iconName: 'fa-list-ul',
-				onClick: () => {
-					// return this.commandTextListUl();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Checkbox'),
-				iconName: 'fa-check-square',
-				onClick: () => {
-					// return this.commandTextCheckbox();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Heading'),
-				iconName: 'fa-header',
-				onClick: () => {
-					// return this.commandTextHeading();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Horizontal Rule'),
-				iconName: 'fa-ellipsis-h',
-				onClick: () => {
-					// return this.commandTextHorizontalRule();
-				},
-			});
-
-			toolbarItems.push({
-				tooltip: _('Insert Date Time'),
-				iconName: 'fa-calendar-plus-o',
-				onClick: () => {
-					props.dispatch({
-						type: 'WINDOW_COMMAND',
-						name: 'insertDateTime',
-					});
-				},
-			});
-
-			toolbarItems.push({
-				type: 'separator',
-			});
-		}
-
-		return toolbarItems;
-	}
-
-	function renderToolbar() {
-		return <Toolbar style={styles.toolbar} items={createToolbarItems()} />;
-	}
-
 	const introductionPostLinkClick = useCallback(() => {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
 	}, []);
@@ -1022,6 +825,7 @@ function NoteEditor(props:NoteTextProps) {
 		disabled: waitingToSaveNote,
 		joplinHtml: joplinHtml,
 		theme: props.theme,
+		dispatch: props.dispatch,
 	};
 
 	let editor = null;
@@ -1056,7 +860,6 @@ function NoteEditor(props:NoteTextProps) {
 						value={formNote.title}
 					/>
 				</div>
-				{renderToolbar()}
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
 				</div>

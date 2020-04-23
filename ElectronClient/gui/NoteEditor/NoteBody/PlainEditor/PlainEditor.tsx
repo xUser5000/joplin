@@ -23,6 +23,7 @@ export const utils:TextEditorUtils = {
 	editorContentToHtml(content:any):Promise<string> {
 		return content ? content : '';
 	},
+	editorContentFormat: () => 'markdown',
 };
 
 const PlainEditor = (props:PlainEditorProps, ref:any) => {

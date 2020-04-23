@@ -61,6 +61,7 @@ Modules/TinyMCE/IconPack/postinstall.js
 ElectronClient/gui/MultiNoteActions.js
 ElectronClient/gui/NoteContentPropertiesDialog.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/AceEditor.js
+ElectronClient/gui/NoteEditor/NoteBody/AceEditor/Toolbar.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/utils/index.js
 ElectronClient/gui/NoteEditor/NoteBody/PlainEditor/PlainEditor.js
 ElectronClient/gui/NoteEditor/NoteBody/TinyMCE/TinyMCE.js
