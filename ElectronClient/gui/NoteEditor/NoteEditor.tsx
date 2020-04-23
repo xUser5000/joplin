@@ -8,6 +8,7 @@ import AceEditor, { utils as aceEditorUtils }  from './NoteBody/AceEditor/AceEdi
 import { connect } from 'react-redux';
 import AsyncActionQueue from '../../lib/AsyncActionQueue';
 import MultiNoteActions from '../MultiNoteActions';
+import NoteToolbar from '../NoteToolbar/NoteToolbar';
 
 // eslint-disable-next-line no-unused-vars
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../utils/NoteText';
@@ -37,6 +38,8 @@ const MenuItem = bridge().MenuItem;
 const fs = require('fs-extra');
 const { clipboard } = require('electron');
 const { toSystemSlashes } = require('lib/path-utils');
+const NoteListUtils = require('../utils/NoteListUtils');
+const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
 
 interface NoteTextProps {
 	style: any,
@@ -135,6 +138,8 @@ async function initNoteState(n:any, setFormNote:Function, setDefaultEditorState:
 		saveActionQueue: new AsyncActionQueue(1000),
 		originalCss: originalCss,
 		hasChanged: false,
+		todo_due: n.todo_due,
+		todo_completed: n.todo_completed,
 	});
 
 	setDefaultEditorState({
@@ -288,12 +293,21 @@ function saveNoteIfWillChange(formNote:FormNote, editorRef:any, dispatch:Functio
 	}, dispatch);
 }
 
+async function saveNoteAndWait(formNote:FormNote, editorRef:any, dispatch:Function) {
+	saveNoteIfWillChange(formNote, editorRef, dispatch);
+	return formNote.saveActionQueue.waitForAllDone();
+	// while (this.props.editorNoteStatuses[this.props.noteId] === 'saving') {
+	// 	console.info('Waiting for note to be saved...', this.props.editorNoteStatuses);
+	// 	await time.msleep(100);
+	// }
+}
+
 function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNote, titleInputRef:React.MutableRefObject<any>, editorRef:React.MutableRefObject<any>) {
 	useEffect(() => {
 		const command = windowCommand;
 		if (!command || !formNote) return;
 
-		const editorCmd:EditorCommand = { name: command.name, value: { ...command.value } };
+		const editorCmd:EditorCommand = { name: '', value: { ...command.value } };
 		let fn:Function = null;
 
 		if (command.name === 'exportPdf') {
@@ -812,6 +826,87 @@ function NoteEditor(props:NoteTextProps) {
 		/>;
 	}
 
+	const externalEditWatcher_noteChange = useCallback((event) => {
+		if (event.id === formNote.id) {
+			const newFormNote = {
+				...formNote,
+				title: event.note.title,
+				body: event.note.body,
+			};
+
+			setFormNote(newFormNote);
+			editorRef.current.setContent(event.note.body);
+		}
+	}, [formNote]);
+
+	useEffect(() => {
+		ExternalEditWatcher.instance().on('noteChange', externalEditWatcher_noteChange);
+
+		return () => {
+			ExternalEditWatcher.instance().off('noteChange', externalEditWatcher_noteChange);
+		};
+	}, [externalEditWatcher_noteChange]);
+
+	const noteToolbar_buttonClick = useCallback((event:any) => {
+		const cases:any = {
+
+			'startExternalEditing': async () => {
+				await saveNoteAndWait(formNote, editorRef, props.dispatch);
+				NoteListUtils.startExternalEditing(formNote.id);
+			},
+
+			'stopExternalEditing': () => {
+				NoteListUtils.stopExternalEditing(formNote.id);
+			},
+
+			'setTags': async () => {
+				await saveNoteAndWait(formNote, editorRef, props.dispatch);
+
+				props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'setTags',
+					noteIds: [formNote.id],
+				});
+			},
+
+			'setAlarm': async () => {
+
+				// TODO: SET ALARM IN BUTTON
+				await saveNoteAndWait(formNote, editorRef, props.dispatch);
+
+				props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'editAlarm',
+					noteId: formNote.id,
+				});
+			},
+
+			'showRevisions': () => {
+				// this.setState({ showRevisions: true });
+			},
+		};
+
+		if (!cases[event.name]) throw new Error(`Unsupported event: ${event.name}`);
+
+		cases[event.name]();
+	}, [formNote]);
+
+	function renderNoteToolbar() {
+		const toolbarStyle = {
+			marginTop: 4,
+			marginBottom: 0,
+		};
+
+		return <NoteToolbar
+			theme={props.theme}
+			note={formNote}
+			dispatch={props.dispatch}
+			style={toolbarStyle}
+			watchedNoteFiles={props.watchedNoteFiles}
+			onButtonClick={noteToolbar_buttonClick}
+		/>;
+	}
+
 	const editorProps = {
 		ref: editorRef,
 		style: styles.tinyMCE,
@@ -826,6 +921,7 @@ function NoteEditor(props:NoteTextProps) {
 		joplinHtml: joplinHtml,
 		theme: props.theme,
 		dispatch: props.dispatch,
+		noteToolbar: renderNoteToolbar(),
 	};
 
 	let editor = null;

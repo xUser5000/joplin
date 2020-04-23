@@ -50,6 +50,7 @@ interface AceEditorProps {
 	joplinHtml: Function,
 	disabled: boolean,
 	dispatch: Function,
+	noteToolbar: any,
 }
 
 interface RenderedBody {
@@ -273,6 +274,9 @@ function AceEditor(props:AceEditorProps, ref:any) {
 	useImperativeHandle(ref, () => {
 		return {
 			content: () => body,
+			setContent: (body:string) => {
+				aceEditor_change(body);
+			},
 			execCommand: async (cmd:EditorCommand) => {
 				if (!editor) return false;
 
@@ -348,7 +352,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 				return true;
 			},
 		};
-	}, [editor, body, wrapSelectionWithStrings, selectionRange, selectionRangeCurrentLine]);
+	}, [editor, body, wrapSelectionWithStrings, selectionRange, selectionRangeCurrentLine, aceEditor_change]);
 
 	const onAfterEditorRender = useCallback(() => {
 		// const r = this.editor_.editor.renderer;
@@ -624,6 +628,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 					theme={props.theme}
 					dispatch={props.dispatch}
 				/>
+				{props.noteToolbar}
 			</div>
 			<div style={styles.rowEditor}>
 				<AceEditorReact
