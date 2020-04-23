@@ -103,6 +103,23 @@ export function textOffsetToCursorPosition(offset:number, body:string) {
 	return null;
 }
 
+function lineAtRow(body:string, row:number) {
+	if (!body) return '';
+	const lines = body.split('\n');
+	if (row < 0 || row >= lines.length) return '';
+	return lines[row];
+}
+
+export function selectionRangeCurrentLine(selectionRange:any, body:string) {
+	if (!selectionRange) return '';
+	return lineAtRow(body, selectionRange.start.row);
+}
+
+export function selectionRangePreviousLine(selectionRange:any, body:string) {
+	if (!selectionRange) return '';
+	return lineAtRow(body, selectionRange.start.row - 1);
+}
+
 export function lineLeftSpaces(line:string) {
 	let output = '';
 	for (let i = 0; i < line.length; i++) {

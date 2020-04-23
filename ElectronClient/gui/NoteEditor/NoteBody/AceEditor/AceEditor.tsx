@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHand
 // eslint-disable-next-line no-unused-vars
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../../../utils/NoteText';
 import * as editorUtils from '../../utils';
-import { textOffsetToCursorPosition, lineLeftSpaces, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
+import { textOffsetToCursorPosition, lineLeftSpaces, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
 import Toolbar from './Toolbar';
 
 const { /* themeStyle,*/ buildStyle } = require('../../../../theme.js');
@@ -261,6 +261,15 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		aceEditor_change(newBody);
 	}, [editor, selectionRange, body, aceEditor_change]);
 
+	const addListItem = useCallback((string1, string2 = '', defaultText = '', byLine = false) => {
+		let newLine = '\n';
+		const range = selectionRange;
+		if (!range || (range.start.row === range.end.row && !selectionRangeCurrentLine(range, body))) {
+			newLine = '';
+		}
+		wrapSelectionWithStrings(newLine + string1, string2, defaultText, null, byLine);
+	}, [wrapSelectionWithStrings, selectionRange, body]);
+
 	useImperativeHandle(ref, () => {
 		return {
 			content: () => body,
@@ -307,6 +316,8 @@ function AceEditor(props:AceEditorProps, ref:any) {
 								} else {
 									wrapSelectionWithStrings(`\`\`\`${match[0]}`, `${match[0]}\`\`\``);
 								}
+							} else {
+								wrapSelectionWithStrings('`', '`', '');
 							}
 						},
 						insertText: (value:any) => wrapSelectionWithStrings(value),
@@ -314,6 +325,16 @@ function AceEditor(props:AceEditorProps, ref:any) {
 							const newBody = await editorUtils.commandAttachFileToBody(body);
 							if (newBody) aceEditor_change(newBody);
 						},
+						textNumberedList: () => {
+							let bulletNumber = markdownUtils.olLineNumber(selectionRangeCurrentLine(selectionRange, body));
+							if (!bulletNumber) bulletNumber = markdownUtils.olLineNumber(selectionRangePreviousLine(selectionRange, body));
+							if (!bulletNumber) bulletNumber = 0;
+							addListItem(`${bulletNumber + 1}. `, '', _('List item'), true);
+						},
+						textBulletedList: () => addListItem('- [ ] ', '', _('List item'), true),
+						textCheckbox: () => addListItem('- [ ] ', '', _('List item'), true),
+						textHeading: () => addListItem('## ','','', true),
+						textHorizontalRule: () => addListItem('* * *'),
 					};
 
 					if (commands[cmd.name]) {
@@ -327,7 +348,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 				return true;
 			},
 		};
-	}, [editor, body, wrapSelectionWithStrings, selectionRange]);
+	}, [editor, body, wrapSelectionWithStrings, selectionRange, selectionRangeCurrentLine]);
 
 	const onAfterEditorRender = useCallback(() => {
 		// const r = this.editor_.editor.renderer;
