@@ -416,7 +416,7 @@ class MainScreenComponent extends React.Component {
 
 						if (newNote) {
 							await Note.save(newNote);
-							eventManager.emit('alarmChange', { noteId: note.id });
+							eventManager.emit('alarmChange', { noteId: note.id, note: newNote });
 						}
 
 						this.setState({ promptOptions: null });

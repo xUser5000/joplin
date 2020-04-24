@@ -40,6 +40,8 @@ const { clipboard } = require('electron');
 const { toSystemSlashes } = require('lib/path-utils');
 const NoteListUtils = require('../utils/NoteListUtils');
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
+const eventManager = require('../../eventManager');
+const NoteRevisionViewer = require('../NoteRevisionViewer.min');
 
 interface NoteTextProps {
 	style: any,
@@ -372,6 +374,7 @@ function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNot
 
 function NoteEditor(props:NoteTextProps) {
 	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
+	const [showRevisions, setShowRevisions] = useState(false);
 	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {} });
 	const prevSyncStarted = usePrevious(props.syncStarted);
 
@@ -559,6 +562,8 @@ function NoteEditor(props:NoteTextProps) {
 				}
 			});
 		}
+
+		setShowRevisions(false);
 
 		async function loadNote() {
 			const n = await Note.load(props.noteId);
@@ -815,17 +820,6 @@ function NoteEditor(props:NoteTextProps) {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
 	}, []);
 
-	if (props.selectedNoteIds.length > 1) {
-		return <MultiNoteActions
-			theme={props.theme}
-			selectedNoteIds={props.selectedNoteIds}
-			notes={props.notes}
-			dispatch={props.dispatch}
-			watchedNoteFiles={props.watchedNoteFiles}
-			style={props.style}
-		/>;
-	}
-
 	const externalEditWatcher_noteChange = useCallback((event) => {
 		if (event.id === formNote.id) {
 			const newFormNote = {
@@ -839,10 +833,33 @@ function NoteEditor(props:NoteTextProps) {
 		}
 	}, [formNote]);
 
+	const onNotePropertyChange = useCallback((event) => {
+		setFormNote(formNote => {
+			if (formNote.id !== event.note.id) return formNote;
+
+			const newFormNote:FormNote = { ...formNote };
+
+			for (const key in event.note) {
+				if (key === 'id') continue;
+				(newFormNote as any)[key] = event.note[key];
+			}
+
+			return newFormNote;
+		});
+	}, []);
+
 	useEffect(() => {
+		eventManager.on('alarmChange', onNotePropertyChange);
+		// eventManager.on('noteTypeToggle', onNotePropertyChange);
+		// eventManager.on('todoToggle', onNotePropertyChange);
+
 		ExternalEditWatcher.instance().on('noteChange', externalEditWatcher_noteChange);
 
 		return () => {
+			eventManager.off('alarmChange', onNotePropertyChange);
+			// eventManager.off('noteTypeToggle', onNotePropertyChange);
+			// eventManager.off('todoToggle', onNotePropertyChange);
+
 			ExternalEditWatcher.instance().off('noteChange', externalEditWatcher_noteChange);
 		};
 	}, [externalEditWatcher_noteChange]);
@@ -870,8 +887,6 @@ function NoteEditor(props:NoteTextProps) {
 			},
 
 			'setAlarm': async () => {
-
-				// TODO: SET ALARM IN BUTTON
 				await saveNoteAndWait(formNote, editorRef, props.dispatch);
 
 				props.dispatch({
@@ -882,7 +897,7 @@ function NoteEditor(props:NoteTextProps) {
 			},
 
 			'showRevisions': () => {
-				// this.setState({ showRevisions: true });
+				setShowRevisions(true);
 			},
 		};
 
@@ -937,6 +952,56 @@ function NoteEditor(props:NoteTextProps) {
 		textEditorUtils_ = aceEditorUtils;
 	} else {
 		throw new Error(`Invalid editor: ${props.bodyEditor}`);
+	}
+
+	const noteRevisionViewer_onBack = useCallback(() => {
+		// When coming back from the revision viewer, the webview has been
+		// unmounted so will need to reload. We set webviewReady to false
+		// to make sure everything is reloaded as expected.
+
+		setShowRevisions(false);
+
+
+		// this.setState({ showRevisions: false, webviewReady: false }, () => {
+		// 	this.lastSetHtml_ = '';
+		// 	this.scheduleReloadNote(this.props);
+		// });
+	}, []);
+
+	if (showRevisions) {
+		// rootStyle.paddingRight = rootStyle.paddingLeft;
+		// rootStyle.paddingTop = rootStyle.paddingLeft;
+		// rootStyle.paddingBottom = rootStyle.paddingLeft;
+		// rootStyle.display = 'inline-flex';
+
+		const theme = themeStyle(props.theme);
+
+		const revStyle = {
+			...props.style,
+			display: 'inline-flex',
+			padding: theme.margin,
+			verticalAlign: 'top',
+			boxSizing: 'border-box',
+
+		};
+
+		// customCss={this.props.customCss}
+		return (
+			<div style={revStyle}>
+				<NoteRevisionViewer noteId={formNote.id} onBack={noteRevisionViewer_onBack} />
+			</div>
+		);
+	}
+
+	if (props.selectedNoteIds.length > 1) {
+		return <MultiNoteActions
+			theme={props.theme}
+			selectedNoteIds={props.selectedNoteIds}
+			notes={props.notes}
+			dispatch={props.dispatch}
+			watchedNoteFiles={props.watchedNoteFiles}
+			style={props.style}
+		/>;
 	}
 
 	return (
