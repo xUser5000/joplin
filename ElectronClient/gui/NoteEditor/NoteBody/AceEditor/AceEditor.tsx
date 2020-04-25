@@ -97,6 +97,7 @@ function styles_(props:AceEditorProps) {
 				display: 'flex',
 				flexDirection: 'row',
 				flex: 1,
+				paddingTop: 10,
 			},
 			viewer: {
 				display: 'flex',

@@ -42,6 +42,7 @@ const NoteListUtils = require('../utils/NoteListUtils');
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
 const eventManager = require('../../eventManager');
 const NoteRevisionViewer = require('../NoteRevisionViewer.min');
+const TagList = require('../TagList.min.js');
 
 interface NoteTextProps {
 	style: any,
@@ -59,6 +60,7 @@ interface NoteTextProps {
 	folders: any[],
 	notesParentType: string,
 	historyNotes: any[],
+	selectedNoteTags: any[],
 }
 
 const defaultNote = ():FormNote => {
@@ -73,12 +75,24 @@ const defaultNote = ():FormNote => {
 		saveActionQueue: null,
 		originalCss: '',
 		hasChanged: false,
+		user_updated_time: 0,
+		// todo_completed: 0,
+		// todo_due: 0,
 	};
 };
 
 function styles_(props:NoteTextProps) {
 	return buildStyle('NoteText', props.theme, (theme:any) => {
 		return {
+			root: {
+				...props.style,
+				boxSizing: 'border-box',
+				paddingLeft: 10,
+				paddingTop: 10,
+				borderLeftWidth: 1,
+				borderLeftColor: theme.dividerColor,
+				borderLeftStyle: 'solid',
+			},
 			titleInput: {
 				flex: 1,
 				display: 'inline-block',
@@ -106,6 +120,12 @@ function styles_(props:NoteTextProps) {
 			toolbar: {
 				marginTop: 4,
 				marginBottom: 0,
+			},
+			titleDate: {
+				...theme.textStyle,
+				color: theme.colorFaded,
+				paddingLeft: 10,
+				paddingRight: 10,
 			},
 		};
 	});
@@ -140,8 +160,9 @@ async function initNoteState(n:any, setFormNote:Function, setDefaultEditorState:
 		saveActionQueue: new AsyncActionQueue(1000),
 		originalCss: originalCss,
 		hasChanged: false,
-		todo_due: n.todo_due,
-		todo_completed: n.todo_completed,
+		user_updated_time: n.user_updated_time,
+		// todo_due: n.todo_due,
+		// todo_completed: n.todo_completed,
 	});
 
 	setDefaultEditorState({
@@ -263,7 +284,7 @@ async function attachResources() {
 	return output;
 }
 
-function scheduleSaveNote(formNote:FormNote, dispatch:Function) {
+function scheduleSaveNote(formNote:FormNote, dispatch:Function, setFormNote:Function) {
 	if (!formNote.saveActionQueue) throw new Error('saveActionQueue is not set!!'); // Sanity check
 
 	reg.logger().debug('Scheduling...', formNote);
@@ -272,7 +293,11 @@ function scheduleSaveNote(formNote:FormNote, dispatch:Function) {
 		return async function() {
 			const note = await formNoteToNote(formNote);
 			reg.logger().debug('Saving note...', note);
-			await Note.save(note);
+			const savedNote:any = await Note.save(note);
+
+			setFormNote((prev:FormNote) => {
+				return { ...prev, user_updated_time: savedNote.user_updated_time };
+			});
 
 			dispatch({
 				type: 'EDITOR_NOTE_STATUS_REMOVE',
@@ -284,7 +309,7 @@ function scheduleSaveNote(formNote:FormNote, dispatch:Function) {
 	formNote.saveActionQueue.push(makeAction(formNote));
 }
 
-function saveNoteIfWillChange(formNote:FormNote, editorRef:any, dispatch:Function) {
+function saveNoteIfWillChange(formNote:FormNote, editorRef:any, dispatch:Function, setFormNote:Function) {
 	if (!formNote.id || !formNote.bodyWillChangeId) return;
 
 	scheduleSaveNote({
@@ -292,16 +317,12 @@ function saveNoteIfWillChange(formNote:FormNote, editorRef:any, dispatch:Functio
 		bodyEditorContent: editorRef.current.content(),
 		bodyWillChangeId: 0,
 		bodyChangeId: 0,
-	}, dispatch);
+	}, dispatch, setFormNote);
 }
 
-async function saveNoteAndWait(formNote:FormNote, editorRef:any, dispatch:Function) {
-	saveNoteIfWillChange(formNote, editorRef, dispatch);
+async function saveNoteAndWait(formNote:FormNote, editorRef:any, dispatch:Function, setFormNote:Function) {
+	saveNoteIfWillChange(formNote, editorRef, dispatch, setFormNote);
 	return formNote.saveActionQueue.waitForAllDone();
-	// while (this.props.editorNoteStatuses[this.props.noteId] === 'saving') {
-	// 	console.info('Waiting for note to be saved...', this.props.editorNoteStatuses);
-	// 	await time.msleep(100);
-	// }
 }
 
 function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNote, titleInputRef:React.MutableRefObject<any>, editorRef:React.MutableRefObject<any>) {
@@ -496,7 +517,7 @@ function NoteEditor(props:NoteTextProps) {
 		// want to run it once on unmount. So because of that we need to use that formNoteRef.
 		return () => {
 			isMountedRef.current = false;
-			saveNoteIfWillChange(formNoteRef.current, editorRef, props.dispatch);
+			saveNoteIfWillChange(formNoteRef.current, editorRef, props.dispatch, setFormNote);
 		};
 	}, []);
 
@@ -547,7 +568,7 @@ function NoteEditor(props:NoteTextProps) {
 
 		reg.logger().debug('Loading existing note', props.noteId);
 
-		saveNoteIfWillChange(formNote, editorRef, props.dispatch);
+		saveNoteIfWillChange(formNote, editorRef, props.dispatch, setFormNote);
 
 		function handleAutoFocus(noteIsTodo:boolean) {
 			if (!props.isProvisional) return;
@@ -613,7 +634,7 @@ function NoteEditor(props:NoteTextProps) {
 			// The previously loaded note, that was modified, will be saved via saveNoteIfWillChange()
 		} else {
 			setFormNote(newNote);
-			scheduleSaveNote(newNote, props.dispatch);
+			scheduleSaveNote(newNote, props.dispatch, setFormNote);
 		}
 	}, [handleProvisionalFlag, formNote]);
 
@@ -868,7 +889,7 @@ function NoteEditor(props:NoteTextProps) {
 		const cases:any = {
 
 			'startExternalEditing': async () => {
-				await saveNoteAndWait(formNote, editorRef, props.dispatch);
+				await saveNoteAndWait(formNote, editorRef, props.dispatch, setFormNote);
 				NoteListUtils.startExternalEditing(formNote.id);
 			},
 
@@ -877,7 +898,7 @@ function NoteEditor(props:NoteTextProps) {
 			},
 
 			'setTags': async () => {
-				await saveNoteAndWait(formNote, editorRef, props.dispatch);
+				await saveNoteAndWait(formNote, editorRef, props.dispatch, setFormNote);
 
 				props.dispatch({
 					type: 'WINDOW_COMMAND',
@@ -887,7 +908,7 @@ function NoteEditor(props:NoteTextProps) {
 			},
 
 			'setAlarm': async () => {
-				await saveNoteAndWait(formNote, editorRef, props.dispatch);
+				await saveNoteAndWait(formNote, editorRef, props.dispatch, setFormNote);
 
 				props.dispatch({
 					type: 'WINDOW_COMMAND',
@@ -908,8 +929,9 @@ function NoteEditor(props:NoteTextProps) {
 
 	function renderNoteToolbar() {
 		const toolbarStyle = {
-			marginTop: 4,
+			// marginTop: 4,
 			marginBottom: 0,
+			flex: 1,
 		};
 
 		return <NoteToolbar
@@ -954,6 +976,12 @@ function NoteEditor(props:NoteTextProps) {
 		throw new Error(`Invalid editor: ${props.bodyEditor}`);
 	}
 
+	const wysiwygBanner = props.bodyEditor !== 'TinyMCE' ? null : (
+		<div style={styles.warningBanner}>
+			This is an experimental WYSIWYG editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information.
+		</div>
+	);
+
 	const noteRevisionViewer_onBack = useCallback(() => {
 		// When coming back from the revision viewer, the webview has been
 		// unmounted so will need to reload. We set webviewReady to false
@@ -967,6 +995,13 @@ function NoteEditor(props:NoteTextProps) {
 		// 	this.scheduleReloadNote(this.props);
 		// });
 	}, []);
+
+	const tagStyle = {
+		// marginBottom: 10,
+		height: 30,
+	};
+
+	const tagList = props.selectedNoteTags.length ? <TagList style={tagStyle} items={props.selectedNoteTags} /> : null;
 
 	if (showRevisions) {
 		// rootStyle.paddingRight = rootStyle.paddingLeft;
@@ -1004,13 +1039,14 @@ function NoteEditor(props:NoteTextProps) {
 		/>;
 	}
 
+	const titleBarDate = <span style={styles.titleDate}>{time.formatMsToLocal(formNote.user_updated_time)}</span>;
+
 	return (
-		<div style={props.style} onDrop={onDrop}>
+		<div style={styles.root} onDrop={onDrop}>
 			<div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-				<div style={styles.warningBanner}>
-					This is an experimental WYSIWYG editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information.
-				</div>
-				<div style={{ display: 'flex' }}>
+				{wysiwygBanner}
+				{tagList}
+				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
 					<input
 						type="text"
 						ref={titleInputRef}
@@ -1020,6 +1056,7 @@ function NoteEditor(props:NoteTextProps) {
 						onChange={onTitleChange}
 						value={formNote.title}
 					/>
+					{titleBarDate}
 				</div>
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
@@ -1049,6 +1086,7 @@ const mapStateToProps = (state:any) => {
 		windowCommand: state.windowCommand,
 		notesParentType: state.notesParentType,
 		historyNotes: state.historyNotes,
+		selectedNoteTags: state.selectedNoteTags,
 	};
 };
 

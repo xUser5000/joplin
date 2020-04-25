@@ -12,8 +12,9 @@ export interface FormNote {
 	is_todo: number,
 	bodyEditorContent?: any,
 	markup_language: number,
-	todo_completed: number,
-	todo_due: number,
+	user_updated_time: number,
+	// todo_completed: number,
+	// todo_due: number,
 
 	hasChanged: boolean,
 

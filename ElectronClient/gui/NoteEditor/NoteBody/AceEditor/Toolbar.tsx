@@ -13,7 +13,7 @@ function styles_(props:ToolbarProps) {
 	return buildStyle('AceEditorToolbar', props.theme, (/* theme:any*/) => {
 		return {
 			root: {
-				marginTop: 4,
+				// marginTop: 4,
 				marginBottom: 0,
 			},
 		};
