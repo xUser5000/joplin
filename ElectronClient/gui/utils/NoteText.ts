@@ -2,27 +2,29 @@ const joplinRendererUtils = require('lib/joplin-renderer').utils;
 const Resource = require('lib/models/Resource');
 
 export interface DefaultEditorState {
-	value: string,
-	markupLanguage: number, // MarkupToHtml.MARKUP_LANGUAGE_XXX
-	resourceInfos: any,
+	value: string;
+	markupLanguage: number; // MarkupToHtml.MARKUP_LANGUAGE_XXX
+	resourceInfos: any;
+	scrollToHash: string;
+	scrollToPercent: number;
 }
 
 export interface OnChangeEvent {
-	changeId: number,
-	content: any,
+	changeId: number;
+	content: any;
 }
 
 export interface TextEditorUtils {
-	editorContentToHtml(content:any):Promise<string>,
-	editorContentFormat():string,
+	editorContentToHtml(content: any): Promise<string>;
+	editorContentFormat(): string;
 }
 
 export interface EditorCommand {
-	name: string,
-	value: any,
+	name: string;
+	value: any;
 }
 
-export function resourcesStatus(resourceInfos:any) {
+export function resourcesStatus(resourceInfos: any) {
 	let lowestIndex = joplinRendererUtils.resourceStatusIndex('ready');
 	for (const id in resourceInfos) {
 		const s = joplinRendererUtils.resourceStatus(Resource, resourceInfos[id]);

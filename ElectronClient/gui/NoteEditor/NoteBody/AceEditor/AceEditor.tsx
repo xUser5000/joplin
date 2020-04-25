@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHand
 // eslint-disable-next-line no-unused-vars
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../../../utils/NoteText';
 import * as editorUtils from '../../utils';
-import { textOffsetToCursorPosition, lineLeftSpaces, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
+import { textOffsetToCursorPosition, useScrollHandler, usePrevious, lineLeftSpaces, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
 import Toolbar from './Toolbar';
 
 const { /* themeStyle,*/ buildStyle } = require('../../../../theme.js');
@@ -38,48 +38,55 @@ require('brace/keybinding/vim');
 require('brace/keybinding/emacs');
 
 interface AceEditorProps {
-	style: any,
-	theme: number,
-	onChange(event: OnChangeEvent): void,
-	onWillChange(event:any): void,
-	onMessage(event:any): void,
-	defaultEditorState: DefaultEditorState,
-	markupToHtml: Function,
-	allAssets: Function,
-	attachResources: Function,
-	joplinHtml: Function,
-	disabled: boolean,
-	dispatch: Function,
-	noteToolbar: any,
+	style: any;
+	theme: number;
+	onChange(event: OnChangeEvent): void;
+	onWillChange(event: any): void;
+	onMessage(event: any): void;
+	onScroll(event: any): void;
+	defaultEditorState: DefaultEditorState;
+	markupToHtml: Function;
+	allAssets: Function;
+	attachResources: Function;
+	joplinHtml: Function;
+	disabled: boolean;
+	dispatch: Function;
+	noteToolbar: any;
+}
+
+enum InitialLoadingState {
+	Idle = 0,
+	Loading = 1,
+	Ready = 3,
 }
 
 interface RenderedBody {
-	html: string,
-	pluginAssets: any[],
+	html: string;
+	pluginAssets: any[];
 }
 
-function markupRenderOptions(override:any = null) {
+function markupRenderOptions(override: any = null) {
 	return { ...override };
 }
 
-export const utils:TextEditorUtils = {
-	editorContentToHtml(content:any):Promise<string> {
+export const utils: TextEditorUtils = {
+	editorContentToHtml(content: any): Promise<string> {
 		return content;
 	},
-	editorContentFormat():string {
+	editorContentFormat(): string {
 		return 'markdown';
 	},
 };
 
-function defaultRenderedBody():RenderedBody {
+function defaultRenderedBody(): RenderedBody {
 	return {
 		html: '',
 		pluginAssets: [],
 	};
 }
 
-function styles_(props:AceEditorProps) {
-	return buildStyle('AceEditor', props.theme, (theme:any) => {
+function styles_(props: AceEditorProps) {
+	return buildStyle('AceEditor', props.theme, (theme: any) => {
 		return {
 			root: {
 				position: 'relative',
@@ -122,14 +129,23 @@ function styles_(props:AceEditorProps) {
 	});
 }
 
-function AceEditor(props:AceEditorProps, ref:any) {
+function AceEditor(props: AceEditorProps, ref: any) {
 	const styles = styles_(props);
 	// const theme = themeStyle(props.theme);
 
+	// Ace Editor text content
 	const [body, setBody] = useState('');
+
+	// Viewer content
+	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody());
 	const [editor, setEditor] = useState(null);
 	const [lastKeys, setLastKeys] = useState([]);
-	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody());
+
+	// Tells the loading and rendering status of the editor when a new
+	// defaultEditorState is set. It goes from 'idle', to 'loading' when
+	// the body has been updated but not the renderedBody yet, to "ready" when
+	// both body and renderedBody are done.
+	const [initialLoadingState, setInitialLoadingState] = useState<InitialLoadingState>(InitialLoadingState.Idle);
 
 	const indentOrig = useRef<any>(null);
 
@@ -140,11 +156,9 @@ function AceEditor(props:AceEditorProps, ref:any) {
 
 	const selectionRange = useSelectionRange(editor);
 
-	function editor_scroll() {
-		// TODO
-	}
+	const [setEditorPercentScroll, setViewerPercentScroll, editor_scroll] = useScrollHandler(editor, webviewRef, props.onScroll);
 
-	const aceEditor_change = useCallback((newBody:string) => {
+	const aceEditor_change = useCallback((newBody: string) => {
 		setBody(newBody);
 		props_onChangeRef.current({ changeId: null, content: newBody });
 	}, []);
@@ -153,7 +167,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 
 	}
 
-	const wrapSelectionWithStrings = useCallback((string1:string, string2:string = '', defaultText:string = '', replacementText:string = null, byLine:boolean = false) => {
+	const wrapSelectionWithStrings = useCallback((string1: string, string2 = '', defaultText = '', replacementText: string = null, byLine = false) => {
 		if (!editor) return;
 
 		const selection = textOffsetSelection(selectionRange, body);
@@ -191,7 +205,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 			// Add the number of newlines to the row
 			// and add the length of the final line to the column (for strings with no newlines this is the string length)
 
-			let newRange:any = {};
+			let newRange: any = {};
 			if (!byLine) {
 				// Correcting offset in Highlighted text when surrounded by white spaces
 				newRange = {
@@ -275,10 +289,24 @@ function AceEditor(props:AceEditorProps, ref:any) {
 	useImperativeHandle(ref, () => {
 		return {
 			content: () => body,
-			setContent: (body:string) => {
+			setContent: (body: string) => {
 				aceEditor_change(body);
 			},
-			execCommand: async (cmd:EditorCommand) => {
+			setScrollTopPercent: (p: number) => {
+				setEditorPercentScroll(p);
+				setViewerPercentScroll(p);
+			},
+			clearState: () => {
+				if (!editor) return;
+				editor.clearSelection();
+				editor.moveCursorTo(0, 0);
+			},
+			// scrollToHash: (hash:string) => {
+			// 	if (!webviewRef.current) return;
+			// 	// await waitForValue(() => renderedBody, InitialLoadingState.Readh);
+			// 	webviewRef.current.wrappedInstance.send('scrollToHash', hash);
+			// },
+			execCommand: async (cmd: EditorCommand) => {
 				if (!editor) return false;
 
 				reg.logger().debug('AceEditor: execCommand', cmd);
@@ -301,7 +329,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 				}
 
 				if (!commandProcessed) {
-					const commands:any = {
+					const commands: any = {
 						textBold: () => wrapSelectionWithStrings('**', '**', _('strong text')),
 						textItalic: () => wrapSelectionWithStrings('*', '*', _('emphasized text')),
 						textLink: async () => {
@@ -325,7 +353,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 								wrapSelectionWithStrings('`', '`', '');
 							}
 						},
-						insertText: (value:any) => wrapSelectionWithStrings(value),
+						insertText: (value: any) => wrapSelectionWithStrings(value),
 						attachFile: async () => {
 							const newBody = await editorUtils.commandAttachFileToBody(body);
 							if (newBody) aceEditor_change(newBody);
@@ -353,7 +381,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 				return true;
 			},
 		};
-	}, [editor, body, wrapSelectionWithStrings, selectionRange, selectionRangeCurrentLine, aceEditor_change]);
+	}, [editor, body, wrapSelectionWithStrings, selectionRange, selectionRangeCurrentLine, aceEditor_change, setEditorPercentScroll, setViewerPercentScroll, renderedBody]);
 
 	const onAfterEditorRender = useCallback(() => {
 		// const r = this.editor_.editor.renderer;
@@ -365,7 +393,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		// }
 	}, []);
 
-	const onEditorPaste = useCallback(async (event:any = null) => {
+	const onEditorPaste = useCallback(async (event: any = null) => {
 		const formats = clipboard.availableFormats();
 		for (let i = 0; i < formats.length; i++) {
 			const format = formats[i].toLowerCase();
@@ -390,7 +418,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		}
 	}, [editor, body, aceEditor_change]);
 
-	const onEditorKeyDown = useCallback((event:any) => {
+	const onEditorKeyDown = useCallback((event: any) => {
 		setLastKeys(prevLastKeys => {
 			const keys = prevLastKeys.slice();
 			keys.push(event.key);
@@ -475,7 +503,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		menu.popup(bridge().window());
 	}, [selectionRange, body, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
 
-	function aceEditor_load(editor:any) {
+	function aceEditor_load(editor: any) {
 		setEditor(editor);
 	}
 
@@ -513,7 +541,7 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		// Disable Markdown auto-completion (eg. auto-adding a dash after a line with a dash.
 		// https://github.com/ajaxorg/ace/issues/2754
 		// @ts-ignore: Keep the function signature as-is despite unusued arguments
-		editor.getSession().getMode().getNextLineIndent = function(state:any, line:string) {
+		editor.getSession().getMode().getNextLineIndent = function(state: any, line: string) {
 			const ls = lastKeys;
 			if (ls.length >= 2 && ls[ls.length - 1] === 'Enter' && ls[ls.length - 2] === 'Enter') return this.$getIndent(line);
 
@@ -568,23 +596,41 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		};
 	}, [editor, selectionRange]);
 
-	const webview_ipcMessage = useCallback((event:any) => {
+	const webview_ipcMessage = useCallback((event: any) => {
 		const msg = event.channel ? event.channel : '';
-		// const args = event.args;
-		// const arg0 = args && args.length >= 1 ? args[0] : null;
+		const args = event.args;
+		const arg0 = args && args.length >= 1 ? args[0] : null;
 
 		if (msg.indexOf('checkboxclick:') === 0) {
 			const newBody = shared.toggleCheckbox(msg, body);
 			aceEditor_change(newBody);
+		} else if (msg === 'percentScroll') {
+			setEditorPercentScroll(arg0);
 		} else {
 			props.onMessage(event);
 		}
 	}, [props.onMessage, body, aceEditor_change]);
 
 	useEffect(() => {
+		setInitialLoadingState(InitialLoadingState.Loading);
 		setBody(props.defaultEditorState.value);
 		setRenderedBody(defaultRenderedBody());
 	}, [props.defaultEditorState]);
+
+	const previousLoadingState = usePrevious(initialLoadingState);
+
+	useEffect(() => {
+		if (previousLoadingState !== initialLoadingState && initialLoadingState === InitialLoadingState.Ready) {
+			// If we have an anchor hash, jump to that anchor
+			if (props.defaultEditorState.scrollToHash) {
+				webviewRef.current.wrappedInstance.send('scrollToHash', props.defaultEditorState.scrollToHash);
+			} else {
+				// Otherwise restore the normal scroll position
+				setEditorPercentScroll(props.defaultEditorState.scrollToPercent);
+				setViewerPercentScroll(props.defaultEditorState.scrollToPercent);
+			}
+		}
+	}, [initialLoadingState, props.defaultEditorState, setEditorPercentScroll, setViewerPercentScroll]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -592,17 +638,19 @@ function AceEditor(props:AceEditorProps, ref:any) {
 		const timeoutId = setTimeout(async () => {
 			const result = await props.markupToHtml(props.defaultEditorState.markupLanguage, body, markupRenderOptions());
 			if (cancelled) return;
+
 			setRenderedBody(result);
+			setInitialLoadingState(InitialLoadingState.Ready);
 		}, 500);
 
 		return () => {
 			cancelled = true;
 			clearTimeout(timeoutId);
 		};
-	}, [body]);
+	}, [body, props.defaultEditorState]);
 
 	useEffect(() => {
-		const options:any = {
+		const options: any = {
 			pluginAssets: renderedBody.pluginAssets,
 			downloadResources: Setting.value('sync.resourceDownloadMode'),
 		};

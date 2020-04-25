@@ -45,25 +45,27 @@ const NoteRevisionViewer = require('../NoteRevisionViewer.min');
 const TagList = require('../TagList.min.js');
 
 interface NoteTextProps {
-	style: any,
-	noteId: string,
-	theme: number,
-	dispatch: Function,
-	selectedNoteIds: string[],
-	notes:any[],
-	watchedNoteFiles:string[],
-	isProvisional: boolean,
-	editorNoteStatuses: any,
-	syncStarted: boolean,
-	bodyEditor: string,
-	windowCommand: any,
-	folders: any[],
-	notesParentType: string,
-	historyNotes: any[],
-	selectedNoteTags: any[],
+	style: any;
+	noteId: string;
+	theme: number;
+	dispatch: Function;
+	selectedNoteIds: string[];
+	notes: any[];
+	watchedNoteFiles: string[];
+	isProvisional: boolean;
+	editorNoteStatuses: any;
+	syncStarted: boolean;
+	bodyEditor: string;
+	windowCommand: any;
+	folders: any[];
+	notesParentType: string;
+	historyNotes: any[];
+	selectedNoteTags: any[];
+	lastEditorScrollPercents: any;
+	selectedNoteHash: string;
 }
 
-const defaultNote = ():FormNote => {
+const defaultNote = (): FormNote => {
 	return {
 		id: '',
 		parent_id: '',
@@ -81,8 +83,8 @@ const defaultNote = ():FormNote => {
 	};
 };
 
-function styles_(props:NoteTextProps) {
-	return buildStyle('NoteText', props.theme, (theme:any) => {
+function styles_(props: NoteTextProps) {
+	return buildStyle('NoteText', props.theme, (theme: any) => {
 		return {
 			root: {
 				...props.style,
@@ -131,9 +133,9 @@ function styles_(props:NoteTextProps) {
 	});
 }
 
-let textEditorUtils_:TextEditorUtils = null;
+let textEditorUtils_: TextEditorUtils = null;
 
-function usePrevious(value:any):any {
+function usePrevious(value: any): any {
 	const ref = useRef();
 	useEffect(() => {
 		ref.current = value;
@@ -141,7 +143,7 @@ function usePrevious(value:any):any {
 	return ref.current;
 }
 
-async function initNoteState(n:any, setFormNote:Function, setDefaultEditorState:Function) {
+async function initNoteState(n: any, setFormNote: Function, setDefaultEditorState: Function, defaultEditorStateOverrides: any = null) {
 	let originalCss = '';
 	if (n.markup_language === MarkupToHtml.MARKUP_LANGUAGE_HTML) {
 		const htmlToHtml = new HtmlToHtml();
@@ -169,27 +171,28 @@ async function initNoteState(n:any, setFormNote:Function, setDefaultEditorState:
 		value: n.body,
 		markupLanguage: n.markup_language,
 		resourceInfos: await attachedResources(n.body),
+		...defaultEditorStateOverrides,
 	});
 
 	await handleResourceDownloadMode(n.body);
 }
 
-async function handleResourceDownloadMode(noteBody:string) {
+async function handleResourceDownloadMode(noteBody: string) {
 	if (noteBody && Setting.value('sync.resourceDownloadMode') === 'auto') {
 		const resourceIds = await Note.linkedResourceIds(noteBody);
 		await ResourceFetcher.instance().markForDownload(resourceIds);
 	}
 }
 
-async function htmlToMarkdown(html:string):Promise<string> {
+async function htmlToMarkdown(html: string): Promise<string> {
 	const htmlToMd = new HtmlToMd();
 	let md = htmlToMd.parse(html, { preserveImageTagsWithSize: true });
 	md = await Note.replaceResourceExternalToInternalLinks(md, { useAbsolutePaths: true });
 	return md;
 }
 
-async function formNoteToNote(formNote:FormNote):Promise<any> {
-	const newNote:any = Object.assign({}, formNote);
+async function formNoteToNote(formNote: FormNote): Promise<any> {
+	const newNote: any = Object.assign({}, formNote);
 
 	if ('bodyEditorContent' in formNote) {
 		const editorContentFormat = textEditorUtils_.editorContentFormat();
@@ -215,17 +218,17 @@ async function formNoteToNote(formNote:FormNote):Promise<any> {
 	return newNote;
 }
 
-let resourceCache_:any = {};
+let resourceCache_: any = {};
 
 function clearResourceCache() {
 	resourceCache_ = {};
 }
 
-async function attachedResources(noteBody:string):Promise<any> {
+async function attachedResources(noteBody: string): Promise<any> {
 	if (!noteBody) return {};
 	const resourceIds = await Note.linkedItemIdsByType(BaseModel.TYPE_RESOURCE, noteBody);
 
-	const output:any = {};
+	const output: any = {};
 	for (let i = 0; i < resourceIds.length; i++) {
 		const id = resourceIds[i];
 
@@ -249,13 +252,13 @@ async function attachedResources(noteBody:string):Promise<any> {
 	return output;
 }
 
-function installResourceHandling(refreshResourceHandler:Function) {
+function installResourceHandling(refreshResourceHandler: Function) {
 	ResourceFetcher.instance().on('downloadComplete', refreshResourceHandler);
 	ResourceFetcher.instance().on('downloadStarted', refreshResourceHandler);
 	DecryptionWorker.instance().on('resourceDecrypted', refreshResourceHandler);
 }
 
-function uninstallResourceHandling(refreshResourceHandler:Function) {
+function uninstallResourceHandling(refreshResourceHandler: Function) {
 	ResourceFetcher.instance().off('downloadComplete', refreshResourceHandler);
 	ResourceFetcher.instance().off('downloadStarted', refreshResourceHandler);
 	DecryptionWorker.instance().off('resourceDecrypted', refreshResourceHandler);
@@ -284,13 +287,13 @@ async function attachResources() {
 	return output;
 }
 
-function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNote, titleInputRef:React.MutableRefObject<any>, editorRef:React.MutableRefObject<any>) {
+function useWindowCommand(windowCommand: any, dispatch: Function, formNote: FormNote, titleInputRef: React.MutableRefObject<any>, editorRef: React.MutableRefObject<any>) {
 	useEffect(() => {
 		const command = windowCommand;
 		if (!command || !formNote) return;
 
-		const editorCmd:EditorCommand = { name: '', value: { ...command.value } };
-		let fn:Function = null;
+		const editorCmd: EditorCommand = { name: '', value: { ...command.value } };
+		let fn: Function = null;
 
 		if (command.name === 'exportPdf') {
 			// TODO
@@ -352,7 +355,7 @@ function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNot
 	}, [windowCommand, dispatch, formNote]);
 }
 
-function NoteEditor(props:NoteTextProps) {
+function NoteEditor(props: NoteTextProps) {
 	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
 	const [showRevisions, setShowRevisions] = useState(false);
 	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {} });
@@ -376,18 +379,18 @@ function NoteEditor(props:NoteTextProps) {
 
 	const styles = styles_(props);
 
-	function scheduleSaveNote(formNote:FormNote) {
+	function scheduleSaveNote(formNote: FormNote) {
 		if (!formNote.saveActionQueue) throw new Error('saveActionQueue is not set!!'); // Sanity check
 
 		reg.logger().debug('Scheduling...', formNote);
 
-		const makeAction = (formNote:FormNote) => {
+		const makeAction = (formNote: FormNote) => {
 			return async function() {
 				const note = await formNoteToNote(formNote);
 				reg.logger().debug('Saving note...', note);
-				const savedNote:any = await Note.save(note);
+				const savedNote: any = await Note.save(note);
 
-				setFormNote((prev:FormNote) => {
+				setFormNote((prev: FormNote) => {
 					return { ...prev, user_updated_time: savedNote.user_updated_time };
 				});
 
@@ -401,7 +404,7 @@ function NoteEditor(props:NoteTextProps) {
 		formNote.saveActionQueue.push(makeAction(formNote));
 	}
 
-	function saveNoteIfWillChange(formNote:FormNote) {
+	function saveNoteIfWillChange(formNote: FormNote) {
 		if (!formNote.id || !formNote.bodyWillChangeId) return;
 
 		scheduleSaveNote({
@@ -412,12 +415,12 @@ function NoteEditor(props:NoteTextProps) {
 		});
 	}
 
-	async function saveNoteAndWait(formNote:FormNote) {
+	async function saveNoteAndWait(formNote: FormNote) {
 		saveNoteIfWillChange(formNote);
 		return formNote.saveActionQueue.waitForAllDone();
 	}
 
-	const markupToHtml = useCallback(async (markupLanguage:number, md:string, options:any = null):Promise<any> => {
+	const markupToHtml = useCallback(async (markupLanguage: number, md: string, options: any = null): Promise<any> => {
 		options = {
 			replaceResourceInternalToExternalLinks: false,
 			...options,
@@ -453,7 +456,7 @@ function NoteEditor(props:NoteTextProps) {
 		return result;
 	}, [props.theme]);
 
-	const allAssets = useCallback(async (markupLanguage:number):Promise<any[]> => {
+	const allAssets = useCallback(async (markupLanguage: number): Promise<any[]> => {
 		const theme = themeStyle(props.theme);
 
 		const markupToHtml = markupLanguageUtils.newMarkupToHtml({
@@ -463,7 +466,7 @@ function NoteEditor(props:NoteTextProps) {
 		return markupToHtml.allAssets(markupLanguage, theme);
 	}, [props.theme]);
 
-	const joplinHtml = useCallback(async (type:string) => {
+	const joplinHtml = useCallback(async (type: string) => {
 		if (type === 'checkbox') {
 			const result = await markupToHtml(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, '- [ ] xxxxxREMOVExxxxx', {
 				bodyOnly: true,
@@ -570,7 +573,7 @@ function NoteEditor(props:NoteTextProps) {
 
 		saveNoteIfWillChange(formNote);
 
-		function handleAutoFocus(noteIsTodo:boolean) {
+		function handleAutoFocus(noteIsTodo: boolean) {
 			if (!props.isProvisional) return;
 
 			const focusSettingName = noteIsTodo ? 'newTodoFocus' : 'newNoteFocus';
@@ -591,7 +594,11 @@ function NoteEditor(props:NoteTextProps) {
 			if (cancelled) return;
 			if (!n) throw new Error(`Cannot find note with ID: ${props.noteId}`);
 			reg.logger().debug('Loaded note:', n);
-			await initNoteState(n, setFormNote, setDefaultEditorState);
+
+			await initNoteState(n, setFormNote, setDefaultEditorState, {
+				scrollToHash: props.selectedNoteHash,
+				scrollToPercent: props.lastEditorScrollPercents[props.noteId] || 0,
+			});
 
 			handleAutoFocus(!!n.is_todo);
 		}
@@ -601,9 +608,9 @@ function NoteEditor(props:NoteTextProps) {
 		return () => {
 			cancelled = true;
 		};
-	}, [props.noteId, props.isProvisional, formNote, waitingToSaveNote]);
+	}, [props.noteId, props.isProvisional, formNote, waitingToSaveNote, props.lastEditorScrollPercents, props.selectedNoteHash]);
 
-	const onFieldChange = useCallback((field:string, value:any, changeId: number = 0) => {
+	const onFieldChange = useCallback((field: string, value: any, changeId = 0) => {
 		if (!isMountedRef.current) {
 			// When the component is unmounted, various actions can happen which can
 			// trigger onChange events, for example the textarea might be cleared.
@@ -681,11 +688,11 @@ function NoteEditor(props:NoteTextProps) {
 		}
 	}, []);
 
-	const onBodyChange = useCallback((event:OnChangeEvent) => onFieldChange('body', event.content, event.changeId), [onFieldChange]);
+	const onBodyChange = useCallback((event: OnChangeEvent) => onFieldChange('body', event.content, event.changeId), [onFieldChange]);
 
-	const onTitleChange = useCallback((event:any) => onFieldChange('title', event.target.value), [onFieldChange]);
+	const onTitleChange = useCallback((event: any) => onFieldChange('title', event.target.value), [onFieldChange]);
 
-	const onBodyWillChange = useCallback((event:any) => {
+	const onBodyWillChange = useCallback((event: any) => {
 		handleProvisionalFlag();
 
 		setFormNote(prev => {
@@ -703,7 +710,7 @@ function NoteEditor(props:NoteTextProps) {
 		});
 	}, [formNote, handleProvisionalFlag]);
 
-	const onMessage = useCallback(async (event:any) => {
+	const onMessage = useCallback(async (event: any) => {
 		const msg = event.channel ? event.channel : '';
 		const args = event.args;
 		const arg0 = args && args.length >= 1 ? args[0] : null;
@@ -858,7 +865,7 @@ function NoteEditor(props:NoteTextProps) {
 		setFormNote(formNote => {
 			if (formNote.id !== event.note.id) return formNote;
 
-			const newFormNote:FormNote = { ...formNote };
+			const newFormNote: FormNote = { ...formNote };
 
 			for (const key in event.note) {
 				if (key === 'id') continue;
@@ -885,8 +892,8 @@ function NoteEditor(props:NoteTextProps) {
 		};
 	}, [externalEditWatcher_noteChange]);
 
-	const noteToolbar_buttonClick = useCallback((event:any) => {
-		const cases:any = {
+	const noteToolbar_buttonClick = useCallback((event: any) => {
+		const cases: any = {
 
 			'startExternalEditing': async () => {
 				await saveNoteAndWait(formNote);
@@ -927,6 +934,14 @@ function NoteEditor(props:NoteTextProps) {
 		cases[event.name]();
 	}, [formNote]);
 
+	const onScroll = useCallback((event: any) => {
+		props.dispatch({
+			type: 'EDITOR_SCROLL_PERCENT_SET',
+			noteId: formNote.id,
+			percent: event.percent,
+		});
+	}, [props.dispatch, formNote]);
+
 	function renderNoteToolbar() {
 		const toolbarStyle = {
 			// marginTop: 4,
@@ -959,6 +974,7 @@ function NoteEditor(props:NoteTextProps) {
 		theme: props.theme,
 		dispatch: props.dispatch,
 		noteToolbar: renderNoteToolbar(),
+		onScroll: onScroll,
 	};
 
 	let editor = null;
@@ -1070,7 +1086,7 @@ export {
 	NoteEditor as NoteEditorComponent,
 };
 
-const mapStateToProps = (state:any) => {
+const mapStateToProps = (state: any) => {
 	const noteId = state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null;
 
 	return {
@@ -1087,6 +1103,8 @@ const mapStateToProps = (state:any) => {
 		notesParentType: state.notesParentType,
 		historyNotes: state.historyNotes,
 		selectedNoteTags: state.selectedNoteTags,
+		lastEditorScrollPercents: state.lastEditorScrollPercents,
+		selectedNoteHash: state.selectedNoteHash,
 	};
 };
 
