@@ -284,47 +284,6 @@ async function attachResources() {
 	return output;
 }
 
-function scheduleSaveNote(formNote:FormNote, dispatch:Function, setFormNote:Function) {
-	if (!formNote.saveActionQueue) throw new Error('saveActionQueue is not set!!'); // Sanity check
-
-	reg.logger().debug('Scheduling...', formNote);
-
-	const makeAction = (formNote:FormNote) => {
-		return async function() {
-			const note = await formNoteToNote(formNote);
-			reg.logger().debug('Saving note...', note);
-			const savedNote:any = await Note.save(note);
-
-			setFormNote((prev:FormNote) => {
-				return { ...prev, user_updated_time: savedNote.user_updated_time };
-			});
-
-			dispatch({
-				type: 'EDITOR_NOTE_STATUS_REMOVE',
-				id: formNote.id,
-			});
-		};
-	};
-
-	formNote.saveActionQueue.push(makeAction(formNote));
-}
-
-function saveNoteIfWillChange(formNote:FormNote, editorRef:any, dispatch:Function, setFormNote:Function) {
-	if (!formNote.id || !formNote.bodyWillChangeId) return;
-
-	scheduleSaveNote({
-		...formNote,
-		bodyEditorContent: editorRef.current.content(),
-		bodyWillChangeId: 0,
-		bodyChangeId: 0,
-	}, dispatch, setFormNote);
-}
-
-async function saveNoteAndWait(formNote:FormNote, editorRef:any, dispatch:Function, setFormNote:Function) {
-	saveNoteIfWillChange(formNote, editorRef, dispatch, setFormNote);
-	return formNote.saveActionQueue.waitForAllDone();
-}
-
 function useWindowCommand(windowCommand:any, dispatch:Function, formNote:FormNote, titleInputRef:React.MutableRefObject<any>, editorRef:React.MutableRefObject<any>) {
 	useEffect(() => {
 		const command = windowCommand;
@@ -416,6 +375,47 @@ function NoteEditor(props:NoteTextProps) {
 	const waitingToSaveNote = props.noteId && formNote.id !== props.noteId && props.editorNoteStatuses[props.noteId] === 'saving';
 
 	const styles = styles_(props);
+
+	function scheduleSaveNote(formNote:FormNote) {
+		if (!formNote.saveActionQueue) throw new Error('saveActionQueue is not set!!'); // Sanity check
+
+		reg.logger().debug('Scheduling...', formNote);
+
+		const makeAction = (formNote:FormNote) => {
+			return async function() {
+				const note = await formNoteToNote(formNote);
+				reg.logger().debug('Saving note...', note);
+				const savedNote:any = await Note.save(note);
+
+				setFormNote((prev:FormNote) => {
+					return { ...prev, user_updated_time: savedNote.user_updated_time };
+				});
+
+				props.dispatch({
+					type: 'EDITOR_NOTE_STATUS_REMOVE',
+					id: formNote.id,
+				});
+			};
+		};
+
+		formNote.saveActionQueue.push(makeAction(formNote));
+	}
+
+	function saveNoteIfWillChange(formNote:FormNote) {
+		if (!formNote.id || !formNote.bodyWillChangeId) return;
+
+		scheduleSaveNote({
+			...formNote,
+			bodyEditorContent: editorRef.current.content(),
+			bodyWillChangeId: 0,
+			bodyChangeId: 0,
+		});
+	}
+
+	async function saveNoteAndWait(formNote:FormNote) {
+		saveNoteIfWillChange(formNote);
+		return formNote.saveActionQueue.waitForAllDone();
+	}
 
 	const markupToHtml = useCallback(async (markupLanguage:number, md:string, options:any = null):Promise<any> => {
 		options = {
@@ -517,7 +517,7 @@ function NoteEditor(props:NoteTextProps) {
 		// want to run it once on unmount. So because of that we need to use that formNoteRef.
 		return () => {
 			isMountedRef.current = false;
-			saveNoteIfWillChange(formNoteRef.current, editorRef, props.dispatch, setFormNote);
+			saveNoteIfWillChange(formNoteRef.current);
 		};
 	}, []);
 
@@ -568,7 +568,7 @@ function NoteEditor(props:NoteTextProps) {
 
 		reg.logger().debug('Loading existing note', props.noteId);
 
-		saveNoteIfWillChange(formNote, editorRef, props.dispatch, setFormNote);
+		saveNoteIfWillChange(formNote);
 
 		function handleAutoFocus(noteIsTodo:boolean) {
 			if (!props.isProvisional) return;
@@ -634,7 +634,7 @@ function NoteEditor(props:NoteTextProps) {
 			// The previously loaded note, that was modified, will be saved via saveNoteIfWillChange()
 		} else {
 			setFormNote(newNote);
-			scheduleSaveNote(newNote, props.dispatch, setFormNote);
+			scheduleSaveNote(newNote);
 		}
 	}, [handleProvisionalFlag, formNote]);
 
@@ -889,7 +889,7 @@ function NoteEditor(props:NoteTextProps) {
 		const cases:any = {
 
 			'startExternalEditing': async () => {
-				await saveNoteAndWait(formNote, editorRef, props.dispatch, setFormNote);
+				await saveNoteAndWait(formNote);
 				NoteListUtils.startExternalEditing(formNote.id);
 			},
 
@@ -898,7 +898,7 @@ function NoteEditor(props:NoteTextProps) {
 			},
 
 			'setTags': async () => {
-				await saveNoteAndWait(formNote, editorRef, props.dispatch, setFormNote);
+				await saveNoteAndWait(formNote);
 
 				props.dispatch({
 					type: 'WINDOW_COMMAND',
@@ -908,7 +908,7 @@ function NoteEditor(props:NoteTextProps) {
 			},
 
 			'setAlarm': async () => {
-				await saveNoteAndWait(formNote, editorRef, props.dispatch, setFormNote);
+				await saveNoteAndWait(formNote);
 
 				props.dispatch({
 					type: 'WINDOW_COMMAND',
