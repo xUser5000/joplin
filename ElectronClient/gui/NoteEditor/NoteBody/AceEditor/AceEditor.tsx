@@ -52,6 +52,7 @@ interface AceEditorProps {
 	disabled: boolean;
 	dispatch: Function;
 	noteToolbar: any;
+	searchMarkers: any,
 }
 
 enum InitialLoadingState {
@@ -155,6 +156,9 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	props_onChangeRef.current = props.onChange;
 
 	const selectionRange = useSelectionRange(editor);
+
+	const previousRenderedBody = usePrevious(renderedBody);
+	const previousSearchMarkers = usePrevious(props.searchMarkers);
 
 	const [setEditorPercentScroll, setViewerPercentScroll, editor_scroll] = useScrollHandler(editor, webviewRef, props.onScroll);
 
@@ -656,6 +660,13 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		};
 		webviewRef.current.wrappedInstance.send('setHtml', renderedBody.html, options);
 	}, [renderedBody]);
+
+	useEffect(() => {
+		console.info(props.searchMarkers);
+		if (props.searchMarkers !== previousSearchMarkers || renderedBody !== previousRenderedBody) {
+			webviewRef.current.wrappedInstance.send('setMarkers', props.searchMarkers.keywords, props.searchMarkers.options);
+		}
+	}, [props.searchMarkers, renderedBody]);
 
 	const viewer = <NoteTextViewer
 		ref={webviewRef}

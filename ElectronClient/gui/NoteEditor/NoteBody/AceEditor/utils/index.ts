@@ -146,6 +146,16 @@ export function useScrollHandler(editor: any, webviewRef: any, onScroll: Functio
 	const ignoreNextEditorScrollEvent_ = useRef(false);
 	const scrollTimeoutId_ = useRef<any>(null);
 
+	// TODO: Below is not needed anymore????
+	//
+	// this.editorMaxScrollTop_ = 0;
+	// // HACK: To go around a bug in Ace editor, we first set the scroll position to 1
+	// // and then (in the renderer callback) to the value we actually need. The first
+	// // operation helps clear the scroll position cache. See:
+	// // https://github.com/ajaxorg/ace/issues/2195
+	// this.editorSetScrollTop(1);
+	// this.restoreScrollTop_ = 0;
+
 	const editorSetScrollTop = useCallback((v) => {
 		if (!editor) return;
 		editor.getSession().setScrollTop(v);

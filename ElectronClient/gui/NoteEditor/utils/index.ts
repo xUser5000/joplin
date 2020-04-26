@@ -1,9 +1,13 @@
+import { useState, useCallback, useMemo } from 'react';
+
 // eslint-disable-next-line no-unused-vars
 import AsyncActionQueue from '../../../lib/AsyncActionQueue';
 
 const { bridge } = require('electron').remote.require('./bridge');
 const { reg } = require('lib/registry.js');
 const { shim } = require('lib/shim');
+const BaseModel = require('lib/BaseModel.js');
+const SearchEngine = require('lib/services/SearchEngine');
 
 export interface FormNote {
 	id: string,
@@ -87,4 +91,132 @@ export async function commandAttachFileToBody(body:string, filePaths:string[] = 
 	}
 
 	return body;
+}
+
+export interface LocalSearch {
+	query: string,
+	selectedIndex: number,
+	resultCount: number,
+	searching: boolean,
+	timestamp: number,
+}
+
+interface SearchMarkersOptions {
+	searchTimestamp: number,
+	selectedIndex: number,
+	separateWordSearch: boolean,
+}
+
+interface SearchMarkers {
+	keywords: any[],
+	options: SearchMarkersOptions,
+}
+
+export function defaultSearchMarkers():SearchMarkers {
+	return {
+		keywords: [],
+		options: {
+			searchTimestamp: 0,
+			selectedIndex: 0,
+			separateWordSearch: false,
+		},
+	};
+}
+
+function localSearchDefaultState():LocalSearch {
+	return {
+		query: '',
+		selectedIndex: 0,
+		resultCount: 0,
+		searching: false,
+		timestamp: 0,
+	};
+}
+
+export function useNoteSearchBar() {
+	const [showLocalSearch, setShowLocalSearch] = useState(false);
+	const [localSearch, setLocalSearch] = useState<LocalSearch>(localSearchDefaultState());
+
+	const onChange = useCallback((query:string) => {
+		setLocalSearch((prev:LocalSearch) => {
+			return {
+				query: query,
+				selectedIndex: 0,
+				timestamp: Date.now(),
+				resultCount: prev.resultCount,
+				searching: true,
+			};
+		});
+	}, []);
+
+	const noteSearchBarNextPrevious = useCallback((inc:number) => {
+		setLocalSearch((prev:LocalSearch) => {
+			const ls = Object.assign({}, prev);
+			ls.selectedIndex += inc;
+			ls.timestamp = Date.now();
+			if (ls.selectedIndex < 0) ls.selectedIndex = ls.resultCount - 1;
+			if (ls.selectedIndex >= ls.resultCount) ls.selectedIndex = 0;
+			return ls;
+		});
+	}, []);
+
+	const onNext = useCallback(() => {
+		noteSearchBarNextPrevious(+1);
+	}, [noteSearchBarNextPrevious]);
+
+	const onPrevious = useCallback(() => {
+		noteSearchBarNextPrevious(-1);
+	}, [noteSearchBarNextPrevious]);
+
+	const onClose = useCallback(() => {
+		setShowLocalSearch(false);
+		setLocalSearch(localSearchDefaultState());
+	}, []);
+
+	const setResultCount = useCallback((count:number) => {
+		setLocalSearch((prev:LocalSearch) => {
+			if (prev.resultCount === count && !prev.searching) return prev;
+
+			return {
+				...prev,
+				resultCount: count,
+				searching: false,
+			};
+		});
+	}, []);
+
+	const searchMarkers = useCallback(():SearchMarkers => {
+		return {
+			options: {
+				selectedIndex: localSearch.selectedIndex,
+				separateWordSearch: false,
+				searchTimestamp: localSearch.timestamp,
+			},
+			keywords: [
+				{
+					type: 'text',
+					value: localSearch.query,
+					accuracy: 'partially',
+				},
+			],
+		};
+	}, [localSearch]);
+
+	return { localSearch, onChange, onNext, onPrevious, onClose, setResultCount, showLocalSearch, setShowLocalSearch, searchMarkers };
+}
+
+export function useSearchMarkers(showLocalSearch:boolean, localSearchMarkerOptions:Function, searches:any[], selectedSearchId:string) {
+	return useMemo(():SearchMarkers => {
+		if (showLocalSearch) return localSearchMarkerOptions();
+
+		const output = defaultSearchMarkers();
+
+		const search = BaseModel.byId(searches, selectedSearchId);
+		if (search) {
+			const parsedQuery = SearchEngine.instance().parseQuery(search.query_pattern);
+			output.keywords = SearchEngine.instance().allParsedQueryTerms(parsedQuery);
+		}
+
+		return output;
+	}, [showLocalSearch, localSearchMarkerOptions, searches, selectedSearchId]);
 }

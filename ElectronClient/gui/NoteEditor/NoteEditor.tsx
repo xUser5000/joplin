@@ -13,8 +13,9 @@ import NoteToolbar from '../NoteToolbar/NoteToolbar';
 // eslint-disable-next-line no-unused-vars
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../utils/NoteText';
 // eslint-disable-next-line no-unused-vars
-import { FormNote } from './utils';
+import { FormNote, useNoteSearchBar, useSearchMarkers } from './utils';
 const { themeStyle, buildStyle } = require('../../theme.js');
+const NoteSearchBar = require('../NoteSearchBar.min.js');
 const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
 const markupLanguageUtils = require('lib/markupLanguageUtils');
@@ -63,6 +64,8 @@ interface NoteTextProps {
 	selectedNoteTags: any[];
 	lastEditorScrollPercents: any;
 	selectedNoteHash: string;
+	searches: [],
+	selectedSearchId: string,
 }
 
 const defaultNote = (): FormNote => {
@@ -287,78 +290,10 @@ async function attachResources() {
 	return output;
 }
 
-function useWindowCommand(windowCommand: any, dispatch: Function, formNote: FormNote, titleInputRef: React.MutableRefObject<any>, editorRef: React.MutableRefObject<any>) {
-	useEffect(() => {
-		const command = windowCommand;
-		if (!command || !formNote) return;
-
-		const editorCmd: EditorCommand = { name: '', value: { ...command.value } };
-		let fn: Function = null;
-
-		if (command.name === 'exportPdf') {
-			// TODO
-		} else if (command.name === 'print') {
-			// TODO
-		} else if (command.name === 'insertDateTime') {
-			editorCmd.name = 'insertText',
-			editorCmd.value = time.formatMsToLocal(new Date().getTime());
-		} else if (command.name === 'commandStartExternalEditing') {
-			// TODO
-		} else if (command.name === 'commandStopExternalEditing') {
-			// TODO
-		} else if (command.name === 'showLocalSearch') {
-			editorCmd.name = 'search';
-		} else if (command.name === 'textCode') {
-			editorCmd.name = 'textCode';
-		} else if (command.name === 'insertTemplate') {
-			editorCmd.name = 'insertText',
-			editorCmd.value = time.formatMsToLocal(new Date().getTime());
-		} else if (command.name === 'textBold') {
-			editorCmd.name = 'textBold';
-		} else if (command.name === 'textItalic') {
-			editorCmd.name = 'textItalic';
-		} else if (command.name === 'textLink') {
-			editorCmd.name = 'textLink';
-		} else if (command.name === 'attachFile') {
-			editorCmd.name = 'attachFile';
-		}
-
-		if (command.name === 'focusElement' && command.target === 'noteTitle') {
-			fn = () => {
-				if (!titleInputRef.current) return;
-				titleInputRef.current.focus();
-			};
-		}
-
-		if (command.name === 'focusElement' && command.target === 'noteBody') {
-			editorCmd.name = 'focus';
-		}
-
-		if (!editorCmd.name && !fn) return;
-
-		dispatch({
-			type: 'WINDOW_COMMAND',
-			name: null,
-		});
-
-		requestAnimationFrame(() => {
-			if (fn) {
-				fn();
-			} else {
-				if (!editorRef.current.execCommand) {
-					reg.logger().warn('Received command, but editor cannot execute commands', editorCmd);
-				} else {
-					editorRef.current.execCommand(editorCmd);
-				}
-			}
-		});
-	}, [windowCommand, dispatch, formNote]);
-}
-
 function NoteEditor(props: NoteTextProps) {
 	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
 	const [showRevisions, setShowRevisions] = useState(false);
-	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {} });
+	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {}, scrollToHash: '', scrollToPercent: 0 });
 	const prevSyncStarted = usePrevious(props.syncStarted);
 
 	const editorRef = useRef<any>();
@@ -366,8 +301,19 @@ function NoteEditor(props: NoteTextProps) {
 	const formNoteRef = useRef<FormNote>();
 	formNoteRef.current = { ...formNote };
 	const isMountedRef = useRef(true);
+	const noteSearchBarRef = useRef(null);
 
-	useWindowCommand(props.windowCommand, props.dispatch, formNote, titleInputRef, editorRef);
+	const {
+		localSearch,
+		onChange: localSearch_change,
+		onNext: localSearch_next,
+		onPrevious: localSearch_previous,
+		onClose: localSearch_close,
+		setResultCount: setLocalSearchResultCount,
+		showLocalSearch,
+		setShowLocalSearch,
+		searchMarkers: localSearchMarkerOptions,
+	} = useNoteSearchBar();
 
 	// const noteFolder = useMemo(() => {
 	// 	return Folder.byId(props.folders, formNote.parent_id);
@@ -645,6 +591,79 @@ function NoteEditor(props: NoteTextProps) {
 		}
 	}, [handleProvisionalFlag, formNote]);
 
+	useEffect(() => {
+		const command = props.windowCommand;
+		if (!command || !formNote) return;
+
+		const editorCmd: EditorCommand = { name: '', value: { ...command.value } };
+		let fn: Function = null;
+
+		if (command.name === 'exportPdf') {
+			// TODO
+		} else if (command.name === 'print') {
+			// TODO
+		} else if (command.name === 'insertDateTime') {
+			editorCmd.name = 'insertText',
+			editorCmd.value = time.formatMsToLocal(new Date().getTime());
+		} else if (command.name === 'commandStartExternalEditing') {
+			// TODO
+		} else if (command.name === 'commandStopExternalEditing') {
+			// TODO
+		} else if (command.name === 'showLocalSearch') {
+			setShowLocalSearch(true);
+
+			if (noteSearchBarRef.current) noteSearchBarRef.current.wrappedInstance.focus();
+
+			// props.dispatch({
+			// 	type: 'NOTE_VISIBLE_PANES_SET',
+			// 	panes: ['editor', 'viewer'],
+			// });
+		} else if (command.name === 'textCode') {
+			editorCmd.name = 'textCode';
+		} else if (command.name === 'insertTemplate') {
+			editorCmd.name = 'insertText',
+			editorCmd.value = time.formatMsToLocal(new Date().getTime());
+		} else if (command.name === 'textBold') {
+			editorCmd.name = 'textBold';
+		} else if (command.name === 'textItalic') {
+			editorCmd.name = 'textItalic';
+		} else if (command.name === 'textLink') {
+			editorCmd.name = 'textLink';
+		} else if (command.name === 'attachFile') {
+			editorCmd.name = 'attachFile';
+		}
+
+		if (command.name === 'focusElement' && command.target === 'noteTitle') {
+			fn = () => {
+				if (!titleInputRef.current) return;
+				titleInputRef.current.focus();
+			};
+		}
+
+		if (command.name === 'focusElement' && command.target === 'noteBody') {
+			editorCmd.name = 'focus';
+		}
+
+		if (!editorCmd.name && !fn) return;
+
+		props.dispatch({
+			type: 'WINDOW_COMMAND',
+			name: null,
+		});
+
+		requestAnimationFrame(() => {
+			if (fn) {
+				fn();
+			} else {
+				if (!editorRef.current.execCommand) {
+					reg.logger().warn('Received command, but editor cannot execute commands', editorCmd);
+				} else {
+					editorRef.current.execCommand(editorCmd);
+				}
+			}
+		});
+	}, [props.windowCommand, props.dispatch, formNote]);
+
 	const onDrop = useCallback(async event => {
 		const dt = event.dataTransfer;
 		const createFileURL = event.altKey;
@@ -722,6 +741,7 @@ function NoteEditor(props: NoteTextProps) {
 			s.splice(0, 1);
 			reg.logger().error(s.join(':'));
 		} else if (msg === 'setMarkerCount') {
+			setLocalSearchResultCount(arg0);
 			// const ls = Object.assign({}, this.state.localSearch);
 			// ls.resultCount = arg0;
 			// ls.searching = false;
@@ -842,7 +862,7 @@ function NoteEditor(props: NoteTextProps) {
 		} else {
 			bridge().showErrorMessageBox(_('Unsupported link or message: %s', msg));
 		}
-	}, [props.dispatch]);
+	}, [props.dispatch, setLocalSearchResultCount]);
 
 	const introductionPostLinkClick = useCallback(() => {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
@@ -959,6 +979,8 @@ function NoteEditor(props: NoteTextProps) {
 		/>;
 	}
 
+	const searchMarkers = useSearchMarkers(showLocalSearch, localSearchMarkerOptions, props.searches, props.selectedSearchId);
+
 	const editorProps = {
 		ref: editorRef,
 		style: styles.tinyMCE,
@@ -975,6 +997,7 @@ function NoteEditor(props: NoteTextProps) {
 		dispatch: props.dispatch,
 		noteToolbar: renderNoteToolbar(),
 		onScroll: onScroll,
+		searchMarkers: searchMarkers,
 	};
 
 	let editor = null;
@@ -1057,6 +1080,32 @@ function NoteEditor(props: NoteTextProps) {
 
 	const titleBarDate = <span style={styles.titleDate}>{time.formatMsToLocal(formNote.user_updated_time)}</span>;
 
+	function renderSearchBar() {
+		if (!showLocalSearch) return false;
+
+		const theme = themeStyle(props.theme);
+
+		return (
+			<NoteSearchBar
+				ref={noteSearchBarRef}
+				style={{
+					display: 'flex',
+					height: 35,
+					// width: innerWidth,
+					borderTop: `1px solid ${theme.dividerColor}`,
+				}}
+				query={localSearch.query}
+				searching={localSearch.searching}
+				resultCount={localSearch.resultCount}
+				selectedIndex={localSearch.selectedIndex}
+				onChange={localSearch_change}
+				onNext={localSearch_next}
+				onPrevious={localSearch_previous}
+				onClose={localSearch_close}
+			/>
+		);
+	}
+
 	return (
 		<div style={styles.root} onDrop={onDrop}>
 			<div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -1076,6 +1125,9 @@ function NoteEditor(props: NoteTextProps) {
 				</div>
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
+				</div>
+				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+					{renderSearchBar()}
 				</div>
 			</div>
 		</div>
@@ -1105,6 +1157,8 @@ const mapStateToProps = (state: any) => {
 		selectedNoteTags: state.selectedNoteTags,
 		lastEditorScrollPercents: state.lastEditorScrollPercents,
 		selectedNoteHash: state.selectedNoteHash,
+		searches: state.searches,
+		selectedSearchId: state.selectedSearchId,
 	};
 };
 
