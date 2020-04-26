@@ -37,6 +37,36 @@ require('brace/theme/chaos');
 require('brace/keybinding/vim');
 require('brace/keybinding/emacs');
 
+// TODO: Could not get below code to work
+
+// @ts-ignore Ace global variable
+// const aceGlobal = (ace as any);
+
+// class CustomHighlightRules extends aceGlobal.acequire(
+// 	'ace/mode/markdown_highlight_rules'
+// ).MarkdownHighlightRules {
+// 	constructor() {
+// 		super();
+// 		if (Setting.value('markdown.plugin.mark')) {
+// 			this.$rules.start.push({
+// 				// This is actually a highlight `mark`, but Ace has no token name for
+// 				// this so we made up our own. Reference for common tokens here:
+// 				// https://github.com/ajaxorg/ace/wiki/Creating-or-Extending-an-Edit-Mode#common-tokens
+// 				token: 'highlight_mark',
+// 				regex: '==[^ ](?:.*?[^ ])?==',
+// 			});
+// 		}
+// 	}
+// }
+
+// /* eslint-disable-next-line no-undef */
+// class CustomMdMode extends aceGlobal.acequire('ace/mode/markdown').Mode {
+// 	constructor() {
+// 		super();
+// 		this.HighlightRules = CustomHighlightRules;
+// 	}
+// }
+
 interface AceEditorProps {
 	style: any;
 	theme: number;
@@ -140,6 +170,9 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	// Viewer content
 	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody());
 	const [editor, setEditor] = useState(null);
+	const editorRef = useRef(null);
+	editorRef.current = editor;
+
 	const [lastKeys, setLastKeys] = useState([]);
 
 	// Tells the loading and rendering status of the editor when a new
@@ -632,6 +665,13 @@ function AceEditor(props: AceEditorProps, ref: any) {
 				// Otherwise restore the normal scroll position
 				setEditorPercentScroll(props.defaultEditorState.scrollToPercent);
 				setViewerPercentScroll(props.defaultEditorState.scrollToPercent);
+			}
+
+			if (editorRef.current) {
+				// editorRef.current.getSession().setMode(new CustomMdMode());
+				const undoManager = editorRef.current.getSession().getUndoManager();
+				undoManager.reset();
+				editorRef.current.getSession().setUndoManager(undoManager);
 			}
 		}
 	}, [initialLoadingState, props.defaultEditorState, setEditorPercentScroll, setViewerPercentScroll]);

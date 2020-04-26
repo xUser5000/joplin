@@ -66,6 +66,7 @@ interface NoteTextProps {
 	selectedNoteHash: string;
 	searches: [],
 	selectedSearchId: string,
+	customCss: string,
 }
 
 const defaultNote = (): FormNote => {
@@ -711,6 +712,31 @@ function NoteEditor(props: NoteTextProps) {
 
 	const onTitleChange = useCallback((event: any) => onFieldChange('title', event.target.value), [onFieldChange]);
 
+	const onTitleKeydown = useCallback((event:any) => {
+		const keyCode = event.keyCode;
+
+		console.info(keyCode);
+
+		if (keyCode === 9) {
+			// TAB
+			event.preventDefault();
+
+			if (event.shiftKey) {
+				props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'focusElement',
+					target: 'noteList',
+				});
+			} else {
+				props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'focusElement',
+					target: 'noteBody',
+				});
+			}
+		}
+	}, [props.dispatch]);
+
 	const onBodyWillChange = useCallback((event: any) => {
 		handleProvisionalFlag();
 
@@ -742,17 +768,10 @@ function NoteEditor(props: NoteTextProps) {
 			reg.logger().error(s.join(':'));
 		} else if (msg === 'setMarkerCount') {
 			setLocalSearchResultCount(arg0);
-			// const ls = Object.assign({}, this.state.localSearch);
-			// ls.resultCount = arg0;
-			// ls.searching = false;
-			// this.setState({ localSearch: ls });
 		} else if (msg.indexOf('markForDownload:') === 0) {
-			// const s = msg.split(':');
-			// if (s.length < 2) throw new Error(`Invalid message: ${msg}`);
-			// ResourceFetcher.instance().markForDownload(s[1]);
-		} else if (msg === 'percentScroll') {
-			// this.ignoreNextEditorScroll_ = true;
-			// this.setEditorPercentScroll(arg0);
+			const s = msg.split(':');
+			if (s.length < 2) throw new Error(`Invalid message: ${msg}`);
+			ResourceFetcher.instance().markForDownload(s[1]);
 		} else if (msg === 'contextMenu') {
 			const itemType = arg0 && arg0.type;
 
@@ -1022,17 +1041,7 @@ function NoteEditor(props: NoteTextProps) {
 	);
 
 	const noteRevisionViewer_onBack = useCallback(() => {
-		// When coming back from the revision viewer, the webview has been
-		// unmounted so will need to reload. We set webviewReady to false
-		// to make sure everything is reloaded as expected.
-
 		setShowRevisions(false);
-
-
-		// this.setState({ showRevisions: false, webviewReady: false }, () => {
-		// 	this.lastSetHtml_ = '';
-		// 	this.scheduleReloadNote(this.props);
-		// });
 	}, []);
 
 	const tagStyle = {
@@ -1043,11 +1052,6 @@ function NoteEditor(props: NoteTextProps) {
 	const tagList = props.selectedNoteTags.length ? <TagList style={tagStyle} items={props.selectedNoteTags} /> : null;
 
 	if (showRevisions) {
-		// rootStyle.paddingRight = rootStyle.paddingLeft;
-		// rootStyle.paddingTop = rootStyle.paddingLeft;
-		// rootStyle.paddingBottom = rootStyle.paddingLeft;
-		// rootStyle.display = 'inline-flex';
-
 		const theme = themeStyle(props.theme);
 
 		const revStyle = {
@@ -1119,9 +1123,11 @@ function NoteEditor(props: NoteTextProps) {
 						placeholder={props.isProvisional ? _('Creating new %s...', formNote.is_todo ? _('to-do') : _('note')) : ''}
 						style={styles.titleInput}
 						onChange={onTitleChange}
+						onKeyDown={onTitleKeydown}
 						value={formNote.title}
 					/>
 					{titleBarDate}
+					[NEW]
 				</div>
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
@@ -1159,6 +1165,7 @@ const mapStateToProps = (state: any) => {
 		selectedNoteHash: state.selectedNoteHash,
 		searches: state.searches,
 		selectedSearchId: state.selectedSearchId,
+		customCss: state.customCss,
 	};
 };
 

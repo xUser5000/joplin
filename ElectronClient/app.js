@@ -547,6 +547,7 @@ class Application extends BaseApplication {
 				this.dispatch({
 					type: 'WINDOW_COMMAND',
 					name: 'print',
+					noteIds: this.store().getState().selectedNoteIds,
 				});
 			},
 		};
