@@ -238,7 +238,6 @@ async function attachResources() {
 function NoteEditor(props: NoteTextProps) {
 	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
 	const [showRevisions, setShowRevisions] = useState(false);
-	// const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {}, scrollToHash: '', scrollToPercent: 0 });
 	const prevSyncStarted = usePrevious(props.syncStarted);
 	const [isNewNote, setIsNewNote] = useState(false);
 	const [titleHasBeenManuallyChanged, setTitleHasBeenManuallyChanged] = useState(false);
@@ -263,10 +262,6 @@ function NoteEditor(props: NoteTextProps) {
 		setShowLocalSearch,
 		searchMarkers: localSearchMarkerOptions,
 	} = useNoteSearchBar();
-
-	// const noteFolder = useMemo(() => {
-	// 	return Folder.byId(props.folders, formNote.parent_id);
-	// }, [props.folders, formNote.parent_id]);
 
 	// If the note has been modified in another editor, wait for it to be saved
 	// before loading it in this editor.
@@ -325,12 +320,14 @@ function NoteEditor(props: NoteTextProps) {
 		formNote.saveActionQueue.push(makeAction(formNote));
 	}
 
-	function saveNoteIfWillChange(formNote: FormNote) {
+	async function saveNoteIfWillChange(formNote: FormNote) {
 		if (!formNote.id || !formNote.bodyWillChangeId) return;
+
+		const body = await editorRef.current.content();
 
 		scheduleSaveNote({
 			...formNote,
-			// bodyEditorContent: editorRef.current.content(),
+			body: body,
 			bodyWillChangeId: 0,
 			bodyChangeId: 0,
 		});
@@ -914,15 +911,11 @@ function NoteEditor(props: NoteTextProps) {
 
 	useEffect(() => {
 		eventManager.on('alarmChange', onNotePropertyChange);
-		// eventManager.on('noteTypeToggle', onNotePropertyChange);
-		// eventManager.on('todoToggle', onNotePropertyChange);
 
 		ExternalEditWatcher.instance().on('noteChange', externalEditWatcher_noteChange);
 
 		return () => {
 			eventManager.off('alarmChange', onNotePropertyChange);
-			// eventManager.off('noteTypeToggle', onNotePropertyChange);
-			// eventManager.off('todoToggle', onNotePropertyChange);
 
 			ExternalEditWatcher.instance().off('noteChange', externalEditWatcher_noteChange);
 		};
@@ -1007,7 +1000,6 @@ function NoteEditor(props: NoteTextProps) {
 		content: formNote.body,
 		resourceInfos: resourceInfos,
 		contentMarkupLanguage: formNote.markup_language,
-		// defaultEditorState: defaultEditorState,
 		htmlToMarkdown: htmlToMarkdown,
 		markupToHtml: markupToHtml,
 		allAssets: allAssets,

@@ -44,7 +44,7 @@ class Setting extends BaseModel {
 				public: false,
 			},
 			'editor.codeView': {
-				value: 'default',
+				value: false,
 				type: Setting.TYPE_BOOL,
 				public: false,
 				appTypes: ['desktop'],

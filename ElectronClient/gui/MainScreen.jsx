@@ -805,6 +805,11 @@ class MainScreenComponent extends React.Component {
 			type: 'checkbox',
 			checked: this.props.settingEditorCodeView,
 			onClick: () => {
+				// A bit of a hack, but for now don't allow changing code view
+				// while a note is being saved as it will cause a problem with
+				// TinyMCE because it won't have time to send its content before
+				// being switch to Ace Editor.
+				if (this.props.hasNotesBeingSaved) return;
 				Setting.toggle('editor.codeView');
 			},
 		});

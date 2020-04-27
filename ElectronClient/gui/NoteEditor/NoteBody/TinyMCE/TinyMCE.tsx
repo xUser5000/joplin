@@ -216,19 +216,28 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 						url: href,
 					},
 				});
-				// props.onMessage({
-				// 	name: 'openExternal',
-				// 	args: {
-				// 		url: href,
-				// 	},
-				// });
 			}
 		}
 	}, [editor, props.onMessage]);
 
 	useImperativeHandle(ref, () => {
 		return {
-			content: () => editor ? editor.getContent() : '',
+			content: async () => {
+				if (!editorRef.current) return '';
+				return prop_htmlToMarkdownRef.current(editorRef.current.getContent());
+			},
+			setContent: (/* body: string*/) => {
+				console.warn('TinyMCE::setContent - not implemented');
+			},
+			resetScroll: () => {
+				console.warn('TinyMCE::resetScroll - not implemented');
+			},
+			scrollTo: (/* options:ScrollOptions*/) => {
+				console.warn('TinyMCE::scrollTo - not implemented');
+			},
+			clearState: () => {
+				console.warn('TinyMCE::clearState - not implemented');
+			},
 			execCommand: async (cmd:EditorCommand) => {
 				if (!editor) return false;
 
