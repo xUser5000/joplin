@@ -2,18 +2,17 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import TinyMCE, { utils as tinyMceUtils } from './NoteBody/TinyMCE/TinyMCE';
-import PlainEditor, { utils as plainEditorUtils }  from './NoteBody/PlainEditor/PlainEditor';
-import AceEditor, { utils as aceEditorUtils }  from './NoteBody/AceEditor/AceEditor';
+import TinyMCE from './NoteBody/TinyMCE/TinyMCE';
+import AceEditor  from './NoteBody/AceEditor/AceEditor';
 import { connect } from 'react-redux';
 import AsyncActionQueue from '../../lib/AsyncActionQueue';
 import MultiNoteActions from '../MultiNoteActions';
 import NoteToolbar from '../NoteToolbar/NoteToolbar';
 
 // eslint-disable-next-line no-unused-vars
-import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../utils/NoteText';
+import { OnChangeEvent, EditorCommand } from '../utils/NoteText';
 // eslint-disable-next-line no-unused-vars
-import { FormNote, useNoteSearchBar, useSearchMarkers } from './utils';
+import { FormNote, useNoteSearchBar, useSearchMarkers, ScrollOptions, ScrollOptionTypes } from './utils';
 const { themeStyle, buildStyle } = require('../../theme.js');
 const NoteSearchBar = require('../NoteSearchBar.min.js');
 const { reg } = require('lib/registry.js');
@@ -75,6 +74,7 @@ const defaultNote = (): FormNote => {
 		id: '',
 		parent_id: '',
 		title: '',
+		body: '',
 		is_todo: 0,
 		markup_language: 1,
 		bodyWillChangeId: 0,
@@ -83,8 +83,6 @@ const defaultNote = (): FormNote => {
 		originalCss: '',
 		hasChanged: false,
 		user_updated_time: 0,
-		// todo_completed: 0,
-		// todo_due: 0,
 	};
 };
 
@@ -138,8 +136,6 @@ function styles_(props: NoteTextProps) {
 	});
 }
 
-let textEditorUtils_: TextEditorUtils = null;
-
 function usePrevious(value: any): any {
 	const ref = useRef();
 	useEffect(() => {
@@ -163,30 +159,11 @@ async function htmlToMarkdown(html: string): Promise<string> {
 }
 
 async function formNoteToNote(formNote: FormNote): Promise<any> {
-	const newNote: any = Object.assign({}, formNote);
-
-	if ('bodyEditorContent' in formNote) {
-		const editorContentFormat = textEditorUtils_.editorContentFormat();
-
-		if (editorContentFormat === 'html') {
-			const html = await textEditorUtils_.editorContentToHtml(formNote.bodyEditorContent);
-
-			if (formNote.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN) {
-				newNote.body = await htmlToMarkdown(html);
-			} else {
-				newNote.body = html;
-				newNote.body = await Note.replaceResourceExternalToInternalLinks(newNote.body, { useAbsolutePaths: true });
-				if (formNote.originalCss) newNote.body = `<style>${formNote.originalCss}</style>\n${newNote.body}`;
-			}
-		} else {
-			newNote.body = formNote.bodyEditorContent;
-			// TODO: TEST WITH HTML notes
-		}
-	}
-
-	delete newNote.bodyEditorContent;
-
-	return newNote;
+	return {
+		id: formNote.id,
+		title: formNote.title,
+		body: formNote.body,
+	};
 }
 
 let resourceCache_: any = {};
@@ -261,10 +238,12 @@ async function attachResources() {
 function NoteEditor(props: NoteTextProps) {
 	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
 	const [showRevisions, setShowRevisions] = useState(false);
-	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {}, scrollToHash: '', scrollToPercent: 0 });
+	// const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {}, scrollToHash: '', scrollToPercent: 0 });
 	const prevSyncStarted = usePrevious(props.syncStarted);
 	const [isNewNote, setIsNewNote] = useState(false);
 	const [titleHasBeenManuallyChanged, setTitleHasBeenManuallyChanged] = useState(false);
+	const [scrollWhenReady, setScrollWhenReady] = useState<ScrollOptions>(null);
+	const [resourceInfos, setResourceInfos] = useState<any>({});
 
 	const editorRef = useRef<any>();
 	const titleInputRef = useRef<any>();
@@ -295,7 +274,7 @@ function NoteEditor(props: NoteTextProps) {
 
 	const styles = styles_(props);
 
-	async function initNoteState(n: any, defaultEditorStateOverrides: any = null) {
+	async function initNoteState(n: any) {
 		let originalCss = '';
 		if (n.markup_language === MarkupToHtml.MARKUP_LANGUAGE_HTML) {
 			const htmlToHtml = new HtmlToHtml();
@@ -306,6 +285,7 @@ function NoteEditor(props: NoteTextProps) {
 		setFormNote({
 			id: n.id,
 			title: n.title,
+			body: n.body,
 			is_todo: n.is_todo,
 			parent_id: n.parent_id,
 			bodyWillChangeId: 0,
@@ -315,15 +295,6 @@ function NoteEditor(props: NoteTextProps) {
 			originalCss: originalCss,
 			hasChanged: false,
 			user_updated_time: n.user_updated_time,
-			// todo_due: n.todo_due,
-			// todo_completed: n.todo_completed,
-		});
-
-		setDefaultEditorState({
-			value: n.body,
-			markupLanguage: n.markup_language,
-			resourceInfos: await attachedResources(n.body),
-			...defaultEditorStateOverrides,
 		});
 
 		await handleResourceDownloadMode(n.body);
@@ -338,7 +309,7 @@ function NoteEditor(props: NoteTextProps) {
 			return async function() {
 				const note = await formNoteToNote(formNote);
 				reg.logger().debug('Saving note...', note);
-				const savedNote: any = await Note.save(note);
+				const savedNote:any = await Note.save(note);
 
 				setFormNote((prev: FormNote) => {
 					return { ...prev, user_updated_time: savedNote.user_updated_time };
@@ -359,7 +330,7 @@ function NoteEditor(props: NoteTextProps) {
 
 		scheduleSaveNote({
 			...formNote,
-			bodyEditorContent: editorRef.current.content(),
+			// bodyEditorContent: editorRef.current.content(),
 			bodyWillChangeId: 0,
 			bodyChangeId: 0,
 		});
@@ -379,7 +350,6 @@ function NoteEditor(props: NoteTextProps) {
 		md = md || '';
 
 		const theme = themeStyle(props.theme);
-
 		let resources = {};
 
 		if (options.replaceResourceInternalToExternalLinks) {
@@ -404,7 +374,7 @@ function NoteEditor(props: NoteTextProps) {
 		}, options));
 
 		return result;
-	}, [props.theme, props.customCss]);
+	}, [props.theme, props.customCss, resourceInfos]);
 
 	const allAssets = useCallback(async (markupLanguage: number): Promise<any[]> => {
 		const theme = themeStyle(props.theme);
@@ -442,18 +412,12 @@ function NoteEditor(props: NoteTextProps) {
 	}, [props.isProvisional, formNote.id]);
 
 	const refreshResource = useCallback(async function(event) {
-		if (!defaultEditorState.value) return;
-
-		const resourceIds = await Note.linkedResourceIds(defaultEditorState.value);
+		const resourceIds = await Note.linkedResourceIds(formNote.body);
 		if (resourceIds.indexOf(event.id) >= 0) {
 			clearResourceCache();
-			const e = {
-				...defaultEditorState,
-				resourceInfos: await attachedResources(defaultEditorState.value),
-			};
-			setDefaultEditorState(e);
+			setResourceInfos(await attachedResources(formNote.body));
 		}
-	}, [defaultEditorState]);
+	}, [formNote.body]);
 
 	useEffect(() => {
 		installResourceHandling(refreshResource);
@@ -461,7 +425,7 @@ function NoteEditor(props: NoteTextProps) {
 		return () => {
 			uninstallResourceHandling(refreshResource);
 		};
-	}, [defaultEditorState]);
+	}, [refreshResource]);
 
 	useEffect(() => {
 		// This is not exactly a hack but a bit ugly. If the note was changed (willChangeId > 0) but not
@@ -547,10 +511,7 @@ function NoteEditor(props: NoteTextProps) {
 			if (!n) throw new Error(`Cannot find note with ID: ${props.noteId}`);
 			reg.logger().debug('Loaded note:', n);
 
-			await initNoteState(n, {
-				scrollToHash: props.selectedNoteHash,
-				scrollToPercent: props.lastEditorScrollPercents[props.noteId] || 0,
-			});
+			await initNoteState(n);
 
 			setIsNewNote(props.isProvisional);
 			setTitleHasBeenManuallyChanged(false);
@@ -565,6 +526,21 @@ function NoteEditor(props: NoteTextProps) {
 		};
 	}, [props.noteId, props.isProvisional, formNote, waitingToSaveNote, props.lastEditorScrollPercents, props.selectedNoteHash]);
 
+	const previousNoteId = usePrevious(formNote.id);
+
+	useEffect(() => {
+		if (formNote.id === previousNoteId) return;
+
+		if (editorRef.current) {
+			editorRef.current.resetScroll();
+		}
+
+		setScrollWhenReady({
+			type: props.selectedNoteHash ? ScrollOptionTypes.Hash : ScrollOptionTypes.Percent,
+			value: props.selectedNoteHash ? props.selectedNoteHash : props.lastEditorScrollPercents[props.noteId] || 0,
+		});
+	}, [formNote.id, previousNoteId]);
+
 	const onFieldChange = useCallback((field: string, value: any, changeId = 0) => {
 		if (!isMountedRef.current) {
 			// When the component is unmounted, various actions can happen which can
@@ -578,7 +554,7 @@ function NoteEditor(props: NoteTextProps) {
 		handleProvisionalFlag();
 
 		const change = field === 'body' ? {
-			bodyEditorContent: value,
+			body: value,
 		} : {
 			title: value,
 		};
@@ -781,6 +757,12 @@ function NoteEditor(props: NoteTextProps) {
 			const s = msg.split(':');
 			s.splice(0, 1);
 			reg.logger().error(s.join(':'));
+		} else if (msg === 'noteRenderComplete') {
+			if (scrollWhenReady) {
+				const options = { ...scrollWhenReady };
+				setScrollWhenReady(null);
+				editorRef.current.scrollTo(options);
+			}
 		} else if (msg === 'setMarkerCount') {
 			setLocalSearchResultCount(arg0);
 		} else if (msg.indexOf('markForDownload:') === 0) {
@@ -896,7 +878,7 @@ function NoteEditor(props: NoteTextProps) {
 		} else {
 			bridge().showErrorMessageBox(_('Unsupported link or message: %s', msg));
 		}
-	}, [props.dispatch, setLocalSearchResultCount]);
+	}, [props.dispatch, setLocalSearchResultCount, scrollWhenReady]);
 
 	const introductionPostLinkClick = useCallback(() => {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
@@ -1017,11 +999,16 @@ function NoteEditor(props: NoteTextProps) {
 
 	const editorProps = {
 		ref: editorRef,
+		contentKey: formNote.id,
 		style: styles.tinyMCE,
 		onChange: onBodyChange,
 		onWillChange: onBodyWillChange,
 		onMessage: onMessage,
-		defaultEditorState: defaultEditorState,
+		content: formNote.body,
+		resourceInfos: resourceInfos,
+		contentMarkupLanguage: formNote.markup_language,
+		// defaultEditorState: defaultEditorState,
+		htmlToMarkdown: htmlToMarkdown,
 		markupToHtml: markupToHtml,
 		allAssets: allAssets,
 		attachResources: attachResources,
@@ -1040,13 +1027,11 @@ function NoteEditor(props: NoteTextProps) {
 
 	if (props.bodyEditor === 'TinyMCE') {
 		editor = <TinyMCE {...editorProps}/>;
-		textEditorUtils_ = tinyMceUtils;
-	} else if (props.bodyEditor === 'PlainEditor') {
-		editor = <PlainEditor {...editorProps}/>;
-		textEditorUtils_ = plainEditorUtils;
+	// } else if (props.bodyEditor === 'PlainEditor') {
+	// 	editor = <PlainEditor {...editorProps}/>;
+	// 	textEditorUtils_ = plainEditorUtils;
 	} else if (props.bodyEditor === 'AceEditor') {
 		editor = <AceEditor {...editorProps}/>;
-		textEditorUtils_ = aceEditorUtils;
 	} else {
 		throw new Error(`Invalid editor: ${props.bodyEditor}`);
 	}
@@ -1111,7 +1096,6 @@ function NoteEditor(props: NoteTextProps) {
 				style={{
 					display: 'flex',
 					height: 35,
-					// width: innerWidth,
 					borderTop: `1px solid ${theme.dividerColor}`,
 				}}
 				query={localSearch.query}

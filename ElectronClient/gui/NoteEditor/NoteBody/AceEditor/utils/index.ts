@@ -152,7 +152,7 @@ export function useScrollHandler(editor: any, webviewRef: any, onScroll: Functio
 	// // HACK: To go around a bug in Ace editor, we first set the scroll position to 1
 	// // and then (in the renderer callback) to the value we actually need. The first
 	// // operation helps clear the scroll position cache. See:
-	// // https://github.com/ajaxorg/ace/issues/2195
+	// //
 	// this.editorSetScrollTop(1);
 	// this.restoreScrollTop_ = 0;
 
@@ -210,6 +210,23 @@ export function useScrollHandler(editor: any, webviewRef: any, onScroll: Functio
 		setViewerPercentScroll(percent);
 	}, [editor, setViewerPercentScroll]);
 
+	const resetScroll = useCallback(() => {
+		if (!editor) return;
+
+		// Ace Editor caches scroll values, which makes
+		// it hard to reset the scroll position, so we
+		// need to use this hack.
+		// https://github.com/ajaxorg/ace/issues/2195
+		editor.session.$scrollTop = -1;
+		editor.session.$scrollLeft = -1;
+		editor.renderer.scrollTop = -1;
+		editor.renderer.scrollLeft = -1;
+		editor.renderer.scrollBarV.scrollTop = -1;
+		editor.renderer.scrollBarH.scrollLeft = -1;
+		editor.session.setScrollTop(0);
+		editor.session.setScrollLeft(0);
+	}, [editorSetScrollTop, editor]);
+
 	useEffect(() => {
 		if (!editor) return () => {};
 
@@ -220,5 +237,5 @@ export function useScrollHandler(editor: any, webviewRef: any, onScroll: Functio
 		};
 	}, [editor]);
 
-	return [setEditorPercentScroll, setViewerPercentScroll, editor_scroll];
+	return { resetScroll, setEditorPercentScroll, setViewerPercentScroll, editor_scroll };
 }

@@ -12,13 +12,12 @@ const SearchEngine = require('lib/services/SearchEngine');
 export interface FormNote {
 	id: string,
 	title: string,
+	body: string,
 	parent_id: string,
 	is_todo: number,
 	bodyEditorContent?: any,
 	markup_language: number,
 	user_updated_time: number,
-	// todo_completed: number,
-	// todo_due: number,
 
 	hasChanged: boolean,
 
@@ -52,6 +51,17 @@ export interface FormNote {
 	// original CSS here. It's used in formNoteToNote to rebuild the note body.
 	// We can keep it here because we know TinyMCE will not modify it anyway.
 	originalCss: string,
+}
+
+export enum ScrollOptionTypes {
+	None = 0,
+	Hash = 1,
+	Percent = 2,
+}
+
+export interface ScrollOptions {
+	type: ScrollOptionTypes,
+	value: any,
 }
 
 export async function commandAttachFileToBody(body:string, filePaths:string[] = null, options:any = null) {

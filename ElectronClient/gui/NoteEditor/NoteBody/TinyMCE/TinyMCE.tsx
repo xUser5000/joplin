@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand, resourcesStatus } from '../../../utils/NoteText';
+import { OnChangeEvent, EditorCommand, resourcesStatus } from '../../../utils/NoteText';
 
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
@@ -14,11 +14,14 @@ const { themeStyle, buildStyle } = require('../../../../theme.js');
 interface TinyMCEProps {
 	style: any,
 	theme: number,
+	content: string,
+	contentMarkupLanguage: number,
+	resourceInfos: any,
 	onChange(event: OnChangeEvent): void,
 	onWillChange(event:any): void,
 	onMessage(event:any): void,
-	defaultEditorState: DefaultEditorState,
 	markupToHtml: Function,
+	htmlToMarkdown: Function,
 	allAssets: Function,
 	attachResources: Function,
 	joplinHtml: Function,
@@ -104,15 +107,6 @@ function enableTextAreaTab(enable:boolean) {
 		}
 	}
 }
-
-export const utils:TextEditorUtils = {
-	editorContentToHtml(content:any):Promise<string> {
-		return content ? content : '';
-	},
-	editorContentFormat():string {
-		return 'html';
-	},
-};
 
 interface TinyMceCommand {
 	name: string,
@@ -638,7 +632,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 	useEffect(() => {
 		if (!editor) return () => {};
 
-		if (resourcesStatus(props.defaultEditorState.resourceInfos) !== 'ready') {
+		if (resourcesStatus(props.resourceInfos) !== 'ready') {
 			editor.setContent('');
 			return () => {};
 		}
@@ -646,12 +640,12 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 		let cancelled = false;
 
 		const loadContent = async () => {
-			const result = await props.markupToHtml(props.defaultEditorState.markupLanguage, props.defaultEditorState.value, markupRenderOptions());
+			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions());
 			if (cancelled) return;
 
 			editor.setContent(result.html);
 
-			await loadDocumentAssets(editor, await props.allAssets(props.defaultEditorState.markupLanguage));
+			await loadDocumentAssets(editor, await props.allAssets(props.contentMarkupLanguage));
 
 			editor.getDoc().addEventListener('click', onEditorContentClick);
 
@@ -671,7 +665,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 			cancelled = true;
 			editor.getDoc().removeEventListener('click', onEditorContentClick);
 		};
-	}, [editor, props.markupToHtml, props.allAssets, props.defaultEditorState, onEditorContentClick]);
+	}, [editor, props.markupToHtml, props.allAssets, onEditorContentClick, props.resourceInfos]);
 
 	// -----------------------------------------------------------------------------------------
 	// Handle onChange event
@@ -682,6 +676,9 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 	// https://github.com/facebook/react/issues/14010#issuecomment-433788147
 	const props_onChangeRef = useRef<Function>();
 	props_onChangeRef.current = props.onChange;
+
+	const prop_htmlToMarkdownRef = useRef<Function>();
+	prop_htmlToMarkdownRef.current = props.htmlToMarkdown;
 
 	useEffect(() => {
 		if (!editor) return () => {};
@@ -694,14 +691,17 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 
 			if (onChangeHandlerIID) clearTimeout(onChangeHandlerIID);
 
-			onChangeHandlerIID = setTimeout(() => {
+			onChangeHandlerIID = setTimeout(async () => {
 				onChangeHandlerIID = null;
+
+				// TODO: Speed up saving time on TextEditor.tsx
+				const contentMd = await prop_htmlToMarkdownRef.current(editor.getContent());
 
 				if (!editor) return;
 
 				props_onChangeRef.current({
 					changeId: changeId,
-					content: editor.getContent(),
+					content: contentMd,
 				});
 
 				dispatchDidUpdate(editor);
@@ -794,7 +794,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 	}, []);
 
 	function renderDisabledOverlay() {
-		const status = resourcesStatus(props.defaultEditorState.resourceInfos);
+		const status = resourcesStatus(props.resourceInfos);
 		if (status === 'ready') return null;
 
 		const message = _('Please wait for all attachments to be downloaded and decrypted. You may also switch the layout and edit the note in Markdown mode.');
