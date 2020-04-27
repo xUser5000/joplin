@@ -1,4 +1,5 @@
 const Setting = require('lib/models/Setting.js');
+const Color = require('color');
 
 const themes = {
 	[Setting.THEME_LIGHT]: require('./gui/style/theme/light'),
@@ -83,6 +84,8 @@ globalStyle.buttonStyle = {
 };
 
 function addExtraStyles(style) {
+	style.selectedDividerColor = Color(style.dividerColor).darken(0.2).hex();
+
 	style.tagStyle = {
 		fontSize: style.fontSize,
 		fontFamily: style.fontFamily,

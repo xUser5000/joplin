@@ -64,9 +64,10 @@ interface NoteTextProps {
 	selectedNoteTags: any[];
 	lastEditorScrollPercents: any;
 	selectedNoteHash: string;
-	searches: [],
+	searches: any[],
 	selectedSearchId: string,
 	customCss: string,
+	noteVisiblePanes: string[],
 }
 
 const defaultNote = (): FormNote => {
@@ -145,40 +146,6 @@ function usePrevious(value: any): any {
 		ref.current = value;
 	});
 	return ref.current;
-}
-
-async function initNoteState(n: any, setFormNote: Function, setDefaultEditorState: Function, defaultEditorStateOverrides: any = null) {
-	let originalCss = '';
-	if (n.markup_language === MarkupToHtml.MARKUP_LANGUAGE_HTML) {
-		const htmlToHtml = new HtmlToHtml();
-		const splitted = htmlToHtml.splitHtml(n.body);
-		originalCss = splitted.css;
-	}
-
-	setFormNote({
-		id: n.id,
-		title: n.title,
-		is_todo: n.is_todo,
-		parent_id: n.parent_id,
-		bodyWillChangeId: 0,
-		bodyChangeId: 0,
-		markup_language: n.markup_language,
-		saveActionQueue: new AsyncActionQueue(1000),
-		originalCss: originalCss,
-		hasChanged: false,
-		user_updated_time: n.user_updated_time,
-		// todo_due: n.todo_due,
-		// todo_completed: n.todo_completed,
-	});
-
-	setDefaultEditorState({
-		value: n.body,
-		markupLanguage: n.markup_language,
-		resourceInfos: await attachedResources(n.body),
-		...defaultEditorStateOverrides,
-	});
-
-	await handleResourceDownloadMode(n.body);
 }
 
 async function handleResourceDownloadMode(noteBody: string) {
@@ -296,6 +263,8 @@ function NoteEditor(props: NoteTextProps) {
 	const [showRevisions, setShowRevisions] = useState(false);
 	const [defaultEditorState, setDefaultEditorState] = useState<DefaultEditorState>({ value: '', markupLanguage: MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resourceInfos: {}, scrollToHash: '', scrollToPercent: 0 });
 	const prevSyncStarted = usePrevious(props.syncStarted);
+	const [isNewNote, setIsNewNote] = useState(false);
+	const [titleHasBeenManuallyChanged, setTitleHasBeenManuallyChanged] = useState(false);
 
 	const editorRef = useRef<any>();
 	const titleInputRef = useRef<any>();
@@ -325,6 +294,40 @@ function NoteEditor(props: NoteTextProps) {
 	const waitingToSaveNote = props.noteId && formNote.id !== props.noteId && props.editorNoteStatuses[props.noteId] === 'saving';
 
 	const styles = styles_(props);
+
+	async function initNoteState(n: any, defaultEditorStateOverrides: any = null) {
+		let originalCss = '';
+		if (n.markup_language === MarkupToHtml.MARKUP_LANGUAGE_HTML) {
+			const htmlToHtml = new HtmlToHtml();
+			const splitted = htmlToHtml.splitHtml(n.body);
+			originalCss = splitted.css;
+		}
+
+		setFormNote({
+			id: n.id,
+			title: n.title,
+			is_todo: n.is_todo,
+			parent_id: n.parent_id,
+			bodyWillChangeId: 0,
+			bodyChangeId: 0,
+			markup_language: n.markup_language,
+			saveActionQueue: new AsyncActionQueue(1000),
+			originalCss: originalCss,
+			hasChanged: false,
+			user_updated_time: n.user_updated_time,
+			// todo_due: n.todo_due,
+			// todo_completed: n.todo_completed,
+		});
+
+		setDefaultEditorState({
+			value: n.body,
+			markupLanguage: n.markup_language,
+			resourceInfos: await attachedResources(n.body),
+			...defaultEditorStateOverrides,
+		});
+
+		await handleResourceDownloadMode(n.body);
+	}
 
 	function scheduleSaveNote(formNote: FormNote) {
 		if (!formNote.saveActionQueue) throw new Error('saveActionQueue is not set!!'); // Sanity check
@@ -393,7 +396,7 @@ function NoteEditor(props: NoteTextProps) {
 
 		const result = await markupToHtml.render(markupLanguage, md, theme, Object.assign({}, {
 			codeTheme: theme.codeThemeCss,
-			// userCss: this.props.customCss ? this.props.customCss : '',
+			userCss: props.customCss || '',
 			resources: resources,
 			postMessageSyntax: 'ipcProxySendToHost',
 			splitted: true,
@@ -401,7 +404,7 @@ function NoteEditor(props: NoteTextProps) {
 		}, options));
 
 		return result;
-	}, [props.theme]);
+	}, [props.theme, props.customCss]);
 
 	const allAssets = useCallback(async (markupLanguage: number): Promise<any[]> => {
 		const theme = themeStyle(props.theme);
@@ -497,7 +500,7 @@ function NoteEditor(props: NoteTextProps) {
 				return;
 			}
 
-			await initNoteState(n, setFormNote, setDefaultEditorState);
+			await initNoteState(n);
 		};
 
 		loadNote();
@@ -537,15 +540,20 @@ function NoteEditor(props: NoteTextProps) {
 		setShowRevisions(false);
 
 		async function loadNote() {
+			// if (formNote.saveActionQueue) await formNote.saveActionQueue.waitForAllDone();
+
 			const n = await Note.load(props.noteId);
 			if (cancelled) return;
 			if (!n) throw new Error(`Cannot find note with ID: ${props.noteId}`);
 			reg.logger().debug('Loaded note:', n);
 
-			await initNoteState(n, setFormNote, setDefaultEditorState, {
+			await initNoteState(n, {
 				scrollToHash: props.selectedNoteHash,
 				scrollToPercent: props.lastEditorScrollPercents[props.noteId] || 0,
 			});
+
+			setIsNewNote(props.isProvisional);
+			setTitleHasBeenManuallyChanged(false);
 
 			handleAutoFocus(!!n.is_todo);
 		}
@@ -583,6 +591,15 @@ function NoteEditor(props: NoteTextProps) {
 			hasChanged: true,
 		};
 
+		if (field === 'title') {
+			setTitleHasBeenManuallyChanged(true);
+		}
+
+		if (isNewNote && !titleHasBeenManuallyChanged && field === 'body') {
+			// TODO: Handle HTML/Markdown format
+			newNote.title = Note.defaultTitle(value);
+		}
+
 		if (changeId !== null && field === 'body' && formNote.bodyWillChangeId !== changeId) {
 			// Note was changed, but another note was loaded before save - skipping
 			// The previously loaded note, that was modified, will be saved via saveNoteIfWillChange()
@@ -590,7 +607,7 @@ function NoteEditor(props: NoteTextProps) {
 			setFormNote(newNote);
 			scheduleSaveNote(newNote);
 		}
-	}, [handleProvisionalFlag, formNote]);
+	}, [handleProvisionalFlag, formNote, isNewNote, titleHasBeenManuallyChanged]);
 
 	useEffect(() => {
 		const command = props.windowCommand;
@@ -714,8 +731,6 @@ function NoteEditor(props: NoteTextProps) {
 
 	const onTitleKeydown = useCallback((event:any) => {
 		const keyCode = event.keyCode;
-
-		console.info(keyCode);
 
 		if (keyCode === 9) {
 			// TAB
@@ -1017,6 +1032,8 @@ function NoteEditor(props: NoteTextProps) {
 		noteToolbar: renderNoteToolbar(),
 		onScroll: onScroll,
 		searchMarkers: searchMarkers,
+		visiblePanes: props.noteVisiblePanes || ['editor', 'viewer'],
+		keyboardMode: Setting.value('editor.keyboardMode'),
 	};
 
 	let editor = null;
@@ -1063,10 +1080,9 @@ function NoteEditor(props: NoteTextProps) {
 
 		};
 
-		// customCss={this.props.customCss}
 		return (
 			<div style={revStyle}>
-				<NoteRevisionViewer noteId={formNote.id} onBack={noteRevisionViewer_onBack} />
+				<NoteRevisionViewer customCss={props.customCss} noteId={formNote.id} onBack={noteRevisionViewer_onBack} />
 			</div>
 		);
 	}
@@ -1127,7 +1143,6 @@ function NoteEditor(props: NoteTextProps) {
 						value={formNote.title}
 					/>
 					{titleBarDate}
-					[NEW]
 				</div>
 				<div style={{ display: 'flex', flex: 1 }}>
 					{editor}
@@ -1166,6 +1181,7 @@ const mapStateToProps = (state: any) => {
 		searches: state.searches,
 		selectedSearchId: state.selectedSearchId,
 		customCss: state.customCss,
+		noteVisiblePanes: state.noteVisiblePanes,
 	};
 };
 

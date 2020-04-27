@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHandle } from 'react';
+import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
 
 // eslint-disable-next-line no-unused-vars
 import { DefaultEditorState, OnChangeEvent, TextEditorUtils, EditorCommand } from '../../../utils/NoteText';
@@ -83,6 +83,8 @@ interface AceEditorProps {
 	dispatch: Function;
 	noteToolbar: any;
 	searchMarkers: any,
+	visiblePanes: string[],
+	keyboardMode: string,
 }
 
 enum InitialLoadingState {
@@ -130,18 +132,29 @@ function styles_(props: AceEditorProps) {
 				display: 'flex',
 				flexDirection: 'row',
 			},
-			rowEditor: {
+			rowEditorViewer: {
 				position: 'relative',
 				display: 'flex',
 				flexDirection: 'row',
 				flex: 1,
 				paddingTop: 10,
 			},
+			cellEditor: {
+				position: 'relative',
+				display: 'flex',
+				flex: 1,
+			},
+			cellViewer: {
+				position: 'relative',
+				display: 'flex',
+				flex: 1,
+			},
 			viewer: {
 				display: 'flex',
 				overflow: 'hidden',
 				verticalAlign: 'top',
 				boxSizing: 'border-box',
+				width: '100%',
 			},
 			editor: {
 				display: 'flex',
@@ -541,6 +554,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	}, [selectionRange, body, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
 
 	function aceEditor_load(editor: any) {
+		console.info('aceEditor_load');
 		setEditor(editor);
 	}
 
@@ -702,18 +716,10 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	}, [renderedBody]);
 
 	useEffect(() => {
-		console.info(props.searchMarkers);
 		if (props.searchMarkers !== previousSearchMarkers || renderedBody !== previousRenderedBody) {
 			webviewRef.current.wrappedInstance.send('setMarkers', props.searchMarkers.keywords, props.searchMarkers.options);
 		}
 	}, [props.searchMarkers, renderedBody]);
-
-	const viewer = <NoteTextViewer
-		ref={webviewRef}
-		viewerStyle={styles.viewer}
-		onDomReady={webview_domReady}
-		onIpcMessage={webview_ipcMessage}
-	/>;
 
 	// width={`${editorStyle.width}px`}
 	// height={`${editorStyle.height}px`}
@@ -721,16 +727,35 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	// keyboardHandler={keyboardMode}
 	// onBeforeLoad={onBeforeLoad}
 
-	return (
-		<div style={styles.root}>
-			<div style={styles.rowToolbar}>
-				<Toolbar
-					theme={props.theme}
-					dispatch={props.dispatch}
-				/>
-				{props.noteToolbar}
-			</div>
-			<div style={styles.rowEditor}>
+	const cellEditorStyle = useMemo(() => {
+		const output = { ...styles.cellEditor };
+		if (!props.visiblePanes.includes('editor')) {
+			// Note: Ideally we'd set the display to "none" to take the editor out
+			// of the DOM but if we do that, certain things won't work, in particular
+			// things related to scroll, which are based on the editor.
+			output.width = 1;
+			output.maxWidth = 1;
+			output.position = 'absolute';
+			output.left = -100000;
+		}
+		return output;
+	}, [styles.cellEditor, props.visiblePanes]);
+
+	const cellViewerStyle = useMemo(() => {
+		const output = { ...styles.cellViewer };
+		if (!props.visiblePanes.includes('viewer')) {
+			// Note: setting webview.display to "none" is currently not supported due
+			// to this bug: https://github.com/electron/electron/issues/8277
+			// So instead setting the width 0.
+			output.width = 1;
+			output.maxWidth = 1;
+		}
+		return output;
+	}, [styles.cellViewer, props.visiblePanes]);
+
+	function renderEditor() {
+		return (
+			<div style={cellEditorStyle}>
 				<AceEditorReact
 					value={body}
 					mode={props.defaultEditorState.markupLanguage === Note.MARKUP_LANGUAGE_HTML ? 'text' : 'markdown'}
@@ -738,6 +763,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 					style={styles.editor}
 					fontSize={styles.editor.fontSize}
 					showGutter={false}
+					readOnly={props.visiblePanes.indexOf('editor') < 0}
 					name="note-editor"
 					wrapEnabled={true}
 					onScroll={editor_scroll}
@@ -754,8 +780,37 @@ function AceEditor(props: AceEditorProps, ref: any) {
 					editorProps={{ $blockScrolling: Infinity }}
 					// This is buggy (gets outside the container)
 					highlightActiveLine={false}
+					keyboardHandler={props.keyboardMode}
 				/>
-				{viewer}
+			</div>
+		);
+	}
+
+	function renderViewer() {
+		return (
+			<div style={cellViewerStyle}>
+				<NoteTextViewer
+					ref={webviewRef}
+					viewerStyle={styles.viewer}
+					onDomReady={webview_domReady}
+					onIpcMessage={webview_ipcMessage}
+				/>
+			</div>
+		);
+	}
+
+	return (
+		<div style={styles.root}>
+			<div style={styles.rowToolbar}>
+				<Toolbar
+					theme={props.theme}
+					dispatch={props.dispatch}
+				/>
+				{props.noteToolbar}
+			</div>
+			<div style={styles.rowEditorViewer}>
+				{renderEditor()}
+				{renderViewer()}
 			</div>
 		</div>
 	);

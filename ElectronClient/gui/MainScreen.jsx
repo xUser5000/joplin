@@ -3,7 +3,6 @@ const { connect } = require('react-redux');
 const { Header } = require('./Header.min.js');
 const { SideBar } = require('./SideBar.min.js');
 const { NoteList } = require('./NoteList.min.js');
-const { NoteText } = require('./NoteText.min.js');
 const NoteEditor = require('./NoteEditor/NoteEditor.js').default;
 const { stateUtils } = require('lib/reducer.js');
 const { PromptDialog } = require('./PromptDialog.min.js');
@@ -800,13 +799,26 @@ class MainScreenComponent extends React.Component {
 		});
 
 		headerItems.push({
-			title: _('Layout'),
-			iconName: 'fa-columns',
+			title: _('Code View'),
+			iconName: 'fa-file-code-o ',
 			enabled: !!notes.length,
+			type: 'checkbox',
+			checked: this.props.settingEditorCodeView,
 			onClick: () => {
-				this.doCommand({ name: 'toggleVisiblePanes' });
+				Setting.toggle('editor.codeView');
 			},
 		});
+
+		if (this.props.settingEditorCodeView) {
+			headerItems.push({
+				title: _('Layout'),
+				iconName: 'fa-columns',
+				enabled: !!notes.length,
+				onClick: () => {
+					this.doCommand({ name: 'toggleVisiblePanes' });
+				},
+			});
+		}
 
 		headerItems.push({
 			title: _('Search...'),
@@ -833,13 +845,9 @@ class MainScreenComponent extends React.Component {
 		const notePropertiesDialogOptions = this.state.notePropertiesDialogOptions;
 		const noteContentPropertiesDialogOptions = this.state.noteContentPropertiesDialogOptions;
 		const shareNoteDialogOptions = this.state.shareNoteDialogOptions;
-		const keyboardMode = Setting.value('editor.keyboardMode');
 
-		const isWYSIWYG = this.props.noteVisiblePanes.length && this.props.noteVisiblePanes[0] === 'wysiwyg';
-		const noteTextComp = isWYSIWYG ?
-			<NoteEditor bodyEditor="AceEditor" style={styles.noteText} keyboardMode={keyboardMode} visiblePanes={this.props.noteVisiblePanes} />
-			:
-			<NoteText style={styles.noteText} keyboardMode={keyboardMode} visiblePanes={this.props.noteVisiblePanes} />;
+		const bodyEditor = this.props.settingEditorCodeView ? 'AceEditor' : 'TinyMCE';
+		const noteTextComp = <NoteEditor bodyEditor={bodyEditor} style={styles.noteText} />;
 
 		return (
 			<div style={style}>
@@ -867,8 +875,8 @@ class MainScreenComponent extends React.Component {
 const mapStateToProps = state => {
 	return {
 		theme: state.settings.theme,
+		settingEditorCodeView: state.settings['editor.codeView'],
 		windowCommand: state.windowCommand,
-		noteVisiblePanes: state.noteVisiblePanes,
 		sidebarVisibility: state.sidebarVisibility,
 		noteListVisibility: state.noteListVisibility,
 		folders: state.folders,
