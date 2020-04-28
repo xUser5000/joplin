@@ -35,6 +35,12 @@
 				"ElectronClient/gui/ShareNoteDialog.js",
 				"ElectronClient/gui/TinyMCE.js",
 				"ElectronClient/gui/utils/NoteText.js",
+				"ElectronClient/gui/NoteEditor/utils/resourceHandling.js",
+				"ElectronClient/gui/NoteEditor/utils/types.js",
+				"ElectronClient/gui/NoteEditor/utils/useNoteSearchBar.js",
+				"ElectronClient/gui/NoteEditor/utils/useSearchMarkers.js",
+				"ElectronClient/gui/NoteEditor/styles/index.js",
+				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/Toolbar.js",
 				"locales/*.json",
 				"log.txt",
 				"package-lock.json",
@@ -53,6 +59,9 @@
 				"ReactNativeClient/setUpQuickActions.js",
 				"src/log.txt",
 				"yarn.lock",
+				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/utils/types.js",
+				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/styles/index.js",
+				"ElectronClient/gui/note-viewer/lib.js"
 			],
 			"folder_exclude_patterns":
 			[
@@ -103,6 +112,7 @@
 				"ReactNativeClient/node_modules",
 				"ReactNativeClient/pluginAssets",
 				"tests/logs",
+				"ElectronClient/gui/note-viewer/pluginAssets"
 			],
 			"path": "."
 		}

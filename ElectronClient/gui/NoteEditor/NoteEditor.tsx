@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
-
 // eslint-disable-next-line no-unused-vars
 import TinyMCE from './NoteBody/TinyMCE/TinyMCE';
 import AceEditor  from './NoteBody/AceEditor/AceEditor';
@@ -8,31 +7,31 @@ import { connect } from 'react-redux';
 import AsyncActionQueue from '../../lib/AsyncActionQueue';
 import MultiNoteActions from '../MultiNoteActions';
 import NoteToolbar from '../NoteToolbar/NoteToolbar';
+import { htmlToMarkdown, formNoteToNote } from './utils';
+import useSearchMarkers from './utils/useSearchMarkers';
+import useNoteSearchBar from './utils/useNoteSearchBar';
+import styles_ from './styles';
+import { NoteTextProps, FormNote, defaultFormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent, EditorCommand } from './utils/types';
+import { handleResourceDownloadMode, clearResourceCache, attachedResources, installResourceHandling, uninstallResourceHandling, attachResources } from './utils/resourceHandling';
 
-// eslint-disable-next-line no-unused-vars
-import { OnChangeEvent, EditorCommand } from '../utils/NoteText';
-// eslint-disable-next-line no-unused-vars
-import { FormNote, useNoteSearchBar, useSearchMarkers, ScrollOptions, ScrollOptionTypes } from './utils';
-const { themeStyle, buildStyle } = require('../../theme.js');
+const { themeStyle } = require('../../theme.js');
 const NoteSearchBar = require('../NoteSearchBar.min.js');
 const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
 const markupLanguageUtils = require('lib/markupLanguageUtils');
+const usePrevious = require('lib/hooks/usePrevious').default;
 const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 const Setting = require('lib/models/Setting');
 const BaseItem = require('lib/models/BaseItem');
 const { MarkupToHtml } = require('lib/joplin-renderer');
-const HtmlToMd = require('lib/HtmlToMd');
 const { _ } = require('lib/locale');
 const Note = require('lib/models/Note.js');
 const BaseModel = require('lib/BaseModel.js');
 const Resource = require('lib/models/Resource.js');
-const { shim } = require('lib/shim');
 const { bridge } = require('electron').remote.require('./bridge');
 const { urlDecode } = require('lib/string-utils');
 const urlUtils = require('lib/urlUtils');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
-const DecryptionWorker = require('lib/services/DecryptionWorker.js');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
 const fs = require('fs-extra');
@@ -44,199 +43,8 @@ const eventManager = require('../../eventManager');
 const NoteRevisionViewer = require('../NoteRevisionViewer.min');
 const TagList = require('../TagList.min.js');
 
-interface NoteTextProps {
-	style: any;
-	noteId: string;
-	theme: number;
-	dispatch: Function;
-	selectedNoteIds: string[];
-	notes: any[];
-	watchedNoteFiles: string[];
-	isProvisional: boolean;
-	editorNoteStatuses: any;
-	syncStarted: boolean;
-	bodyEditor: string;
-	windowCommand: any;
-	folders: any[];
-	notesParentType: string;
-	historyNotes: any[];
-	selectedNoteTags: any[];
-	lastEditorScrollPercents: any;
-	selectedNoteHash: string;
-	searches: any[],
-	selectedSearchId: string,
-	customCss: string,
-	noteVisiblePanes: string[],
-}
-
-const defaultNote = (): FormNote => {
-	return {
-		id: '',
-		parent_id: '',
-		title: '',
-		body: '',
-		is_todo: 0,
-		markup_language: 1,
-		bodyWillChangeId: 0,
-		bodyChangeId: 0,
-		saveActionQueue: null,
-		originalCss: '',
-		hasChanged: false,
-		user_updated_time: 0,
-	};
-};
-
-function styles_(props: NoteTextProps) {
-	return buildStyle('NoteText', props.theme, (theme: any) => {
-		return {
-			root: {
-				...props.style,
-				boxSizing: 'border-box',
-				paddingLeft: 10,
-				paddingTop: 10,
-				borderLeftWidth: 1,
-				borderLeftColor: theme.dividerColor,
-				borderLeftStyle: 'solid',
-			},
-			titleInput: {
-				flex: 1,
-				display: 'inline-block',
-				paddingTop: 5,
-				paddingBottom: 5,
-				paddingLeft: 8,
-				paddingRight: 8,
-				marginRight: theme.paddingLeft,
-				color: theme.textStyle.color,
-				fontSize: theme.textStyle.fontSize * 1.25 * 1.5,
-				backgroundColor: theme.backgroundColor,
-				border: '1px solid',
-				borderColor: theme.dividerColor,
-			},
-			warningBanner: {
-				background: theme.warningBackgroundColor,
-				fontFamily: theme.fontFamily,
-				padding: 10,
-				fontSize: theme.fontSize,
-			},
-			tinyMCE: {
-				width: '100%',
-				height: '100%',
-			},
-			toolbar: {
-				marginTop: 4,
-				marginBottom: 0,
-			},
-			titleDate: {
-				...theme.textStyle,
-				color: theme.colorFaded,
-				paddingLeft: 10,
-				paddingRight: 10,
-			},
-		};
-	});
-}
-
-function usePrevious(value: any): any {
-	const ref = useRef();
-	useEffect(() => {
-		ref.current = value;
-	});
-	return ref.current;
-}
-
-async function handleResourceDownloadMode(noteBody: string) {
-	if (noteBody && Setting.value('sync.resourceDownloadMode') === 'auto') {
-		const resourceIds = await Note.linkedResourceIds(noteBody);
-		await ResourceFetcher.instance().markForDownload(resourceIds);
-	}
-}
-
-async function htmlToMarkdown(html: string): Promise<string> {
-	const htmlToMd = new HtmlToMd();
-	let md = htmlToMd.parse(html, { preserveImageTagsWithSize: true });
-	md = await Note.replaceResourceExternalToInternalLinks(md, { useAbsolutePaths: true });
-	return md;
-}
-
-async function formNoteToNote(formNote: FormNote): Promise<any> {
-	return {
-		id: formNote.id,
-		title: formNote.title,
-		body: formNote.body,
-	};
-}
-
-let resourceCache_: any = {};
-
-function clearResourceCache() {
-	resourceCache_ = {};
-}
-
-async function attachedResources(noteBody: string): Promise<any> {
-	if (!noteBody) return {};
-	const resourceIds = await Note.linkedItemIdsByType(BaseModel.TYPE_RESOURCE, noteBody);
-
-	const output: any = {};
-	for (let i = 0; i < resourceIds.length; i++) {
-		const id = resourceIds[i];
-
-		if (resourceCache_[id]) {
-			output[id] = resourceCache_[id];
-		} else {
-			const resource = await Resource.load(id);
-			const localState = await Resource.localState(resource);
-
-			const o = {
-				item: resource,
-				localState: localState,
-			};
-
-			// eslint-disable-next-line require-atomic-updates
-			resourceCache_[id] = o;
-			output[id] = o;
-		}
-	}
-
-	return output;
-}
-
-function installResourceHandling(refreshResourceHandler: Function) {
-	ResourceFetcher.instance().on('downloadComplete', refreshResourceHandler);
-	ResourceFetcher.instance().on('downloadStarted', refreshResourceHandler);
-	DecryptionWorker.instance().on('resourceDecrypted', refreshResourceHandler);
-}
-
-function uninstallResourceHandling(refreshResourceHandler: Function) {
-	ResourceFetcher.instance().off('downloadComplete', refreshResourceHandler);
-	ResourceFetcher.instance().off('downloadStarted', refreshResourceHandler);
-	DecryptionWorker.instance().off('resourceDecrypted', refreshResourceHandler);
-}
-
-async function attachResources() {
-	const filePaths = bridge().showOpenDialog({
-		properties: ['openFile', 'createDirectory', 'multiSelections'],
-	});
-	if (!filePaths || !filePaths.length) return [];
-
-	const output = [];
-
-	for (const filePath of filePaths) {
-		try {
-			const resource = await shim.createResourceFromPath(filePath);
-			output.push({
-				item: resource,
-				markdownTag: Resource.markdownTag(resource),
-			});
-		} catch (error) {
-			bridge().showErrorMessageBox(error.message);
-		}
-	}
-
-	return output;
-}
-
 function NoteEditor(props: NoteTextProps) {
-	const [formNote, setFormNote] = useState<FormNote>(defaultNote());
+	const [formNote, setFormNote] = useState<FormNote>(defaultFormNote());
 	const [showRevisions, setShowRevisions] = useState(false);
 	const prevSyncStarted = usePrevious(props.syncStarted);
 	const [isNewNote, setIsNewNote] = useState(false);
@@ -286,7 +94,7 @@ function NoteEditor(props: NoteTextProps) {
 			bodyWillChangeId: 0,
 			bodyChangeId: 0,
 			markup_language: n.markup_language,
-			saveActionQueue: new AsyncActionQueue(1000),
+			saveActionQueue: new AsyncActionQueue(300),
 			originalCss: originalCss,
 			hasChanged: false,
 			user_updated_time: n.user_updated_time,
@@ -383,22 +191,6 @@ function NoteEditor(props: NoteTextProps) {
 
 		return markupToHtml.allAssets(markupLanguage, theme);
 	}, [props.theme]);
-
-	const joplinHtml = useCallback(async (type: string) => {
-		if (type === 'checkbox') {
-			const result = await markupToHtml(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, '- [ ] xxxxxREMOVExxxxx', {
-				bodyOnly: true,
-				externalAssetsOnly: true,
-			});
-			const html = result.html
-				.replace(/xxxxxREMOVExxxxx/m, ' ')
-				.replace(/<ul.*?>/, '')
-				.replace(/<\/ul>/, '');
-			return { ...result, html: html };
-		}
-
-		throw new Error(`Invalid type:${type}`);
-	}, [markupToHtml]);
 
 	const handleProvisionalFlag = useCallback(() => {
 		if (props.isProvisional) {
@@ -603,13 +395,7 @@ function NoteEditor(props: NoteTextProps) {
 			// TODO
 		} else if (command.name === 'showLocalSearch') {
 			setShowLocalSearch(true);
-
 			if (noteSearchBarRef.current) noteSearchBarRef.current.wrappedInstance.focus();
-
-			// props.dispatch({
-			// 	type: 'NOTE_VISIBLE_PANES_SET',
-			// 	panes: ['editor', 'viewer'],
-			// });
 		} else if (command.name === 'textCode') {
 			editorCmd.name = 'textCode';
 		} else if (command.name === 'insertTemplate') {
@@ -912,15 +698,13 @@ function NoteEditor(props: NoteTextProps) {
 
 	useEffect(() => {
 		eventManager.on('alarmChange', onNotePropertyChange);
-
 		ExternalEditWatcher.instance().on('noteChange', externalEditWatcher_noteChange);
 
 		return () => {
 			eventManager.off('alarmChange', onNotePropertyChange);
-
 			ExternalEditWatcher.instance().off('noteChange', externalEditWatcher_noteChange);
 		};
-	}, [externalEditWatcher_noteChange]);
+	}, [externalEditWatcher_noteChange, onNotePropertyChange]);
 
 	const noteToolbar_buttonClick = useCallback((event: any) => {
 		const cases: any = {
@@ -1017,7 +801,6 @@ function NoteEditor(props: NoteTextProps) {
 		allAssets: allAssets,
 		attachResources: attachResources,
 		disabled: waitingToSaveNote,
-		joplinHtml: joplinHtml,
 		theme: props.theme,
 		dispatch: props.dispatch,
 		noteToolbar: renderNoteToolbar(),
@@ -1031,9 +814,6 @@ function NoteEditor(props: NoteTextProps) {
 
 	if (props.bodyEditor === 'TinyMCE') {
 		editor = <TinyMCE {...editorProps}/>;
-	// } else if (props.bodyEditor === 'PlainEditor') {
-	// 	editor = <PlainEditor {...editorProps}/>;
-	// 	textEditorUtils_ = plainEditorUtils;
 	} else if (props.bodyEditor === 'AceEditor') {
 		editor = <AceEditor {...editorProps}/>;
 	} else {

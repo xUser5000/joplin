@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-
-// eslint-disable-next-line no-unused-vars
-import { OnChangeEvent, EditorCommand, resourcesStatus } from '../../../utils/NoteText';
-
+import { OnChangeEvent, EditorCommand } from '../../utils/types';
+import { resourcesStatus } from '../../utils/resourceHandling';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
 const { reg } = require('lib/registry.js');
@@ -24,7 +22,6 @@ interface TinyMCEProps {
 	htmlToMarkdown: Function,
 	allAssets: Function,
 	attachResources: Function,
-	joplinHtml: Function,
 	disabled: boolean,
 }
 
@@ -163,9 +160,6 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 
 	const markupToHtml = useRef(null);
 	markupToHtml.current = props.markupToHtml;
-
-	const joplinHtml = useRef(null);
-	joplinHtml.current = props.joplinHtml;
 
 	const rootIdRef = useRef<string>(`tinymce-${Date.now()}${Math.round(Math.random() * 10000)}`);
 	const editorRef = useRef<any>(null);

@@ -2,12 +2,14 @@ import * as React from 'react';
 import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import { OnChangeEvent, EditorCommand } from '../../../utils/NoteText';
-import { commandAttachFileToBody, ScrollOptions, ScrollOptionTypes } from '../../utils';
+import { EditorCommand } from '../../utils/types';
+import { commandAttachFileToBody } from '../../utils/resourceHandling';
+import { ScrollOptions, ScrollOptionTypes } from '../../utils/types';
 import { textOffsetToCursorPosition, useScrollHandler, usePrevious, lineLeftSpaces, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
 import Toolbar from './Toolbar';
+import styles_ from './styles';
+import { AceEditorProps, RenderedBody, defaultRenderedBody } from './utils/types';
 
-const { buildStyle } = require('../../../../theme.js');
 const AceEditorReact = require('react-ace').default;
 const { bridge } = require('electron').remote.require('./bridge');
 const Note = require('lib/models/Note.js');
@@ -67,101 +69,8 @@ require('brace/keybinding/emacs');
 // 	}
 // }
 
-interface AceEditorProps {
-	style: any;
-	theme: number;
-	content: string,
-	contentKey: string,
-	contentMarkupLanguage: number,
-	onChange(event: OnChangeEvent): void;
-	onWillChange(event: any): void;
-	onMessage(event: any): void;
-	onScroll(event: any): void;
-	markupToHtml: Function;
-	htmlToMarkdown: Function;
-	allAssets: Function;
-	attachResources: Function;
-	joplinHtml: Function;
-	disabled: boolean;
-	dispatch: Function;
-	noteToolbar: any;
-	searchMarkers: any,
-	visiblePanes: string[],
-	keyboardMode: string,
-}
-
-interface RenderedBody {
-	html: string;
-	pluginAssets: any[];
-}
-
 function markupRenderOptions(override: any = null) {
 	return { ...override };
-}
-
-function defaultRenderedBody(): RenderedBody {
-	return {
-		html: '',
-		pluginAssets: [],
-	};
-}
-
-function styles_(props: AceEditorProps) {
-	return buildStyle('AceEditor', props.theme, (theme: any) => {
-		return {
-			root: {
-				position: 'relative',
-				display: 'flex',
-				flexDirection: 'column',
-				...props.style,
-			},
-			rowToolbar: {
-				position: 'relative',
-				display: 'flex',
-				flexDirection: 'row',
-			},
-			rowEditorViewer: {
-				position: 'relative',
-				display: 'flex',
-				flexDirection: 'row',
-				flex: 1,
-				paddingTop: 10,
-			},
-			cellEditor: {
-				position: 'relative',
-				display: 'flex',
-				flex: 1,
-			},
-			cellViewer: {
-				position: 'relative',
-				display: 'flex',
-				flex: 1,
-				borderLeftWidth: 1,
-				borderLeftColor: theme.dividerColor,
-				borderLeftStyle: 'solid',
-			},
-			viewer: {
-				display: 'flex',
-				overflow: 'hidden',
-				verticalAlign: 'top',
-				boxSizing: 'border-box',
-				width: '100%',
-			},
-			editor: {
-				display: 'flex',
-				width: 'auto',
-				height: 'auto',
-				flex: 1,
-				overflowY: 'hidden',
-				paddingTop: 0,
-				lineHeight: `${theme.textAreaLineHeight}px`,
-				fontSize: `${theme.editorFontSize}px`,
-				color: theme.color,
-				backgroundColor: theme.backgroundColor,
-				editorTheme: theme.editorTheme, // Defined in theme.js
-			},
-		};
-	});
 }
 
 function AceEditor(props: AceEditorProps, ref: any) {
@@ -526,7 +435,6 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	}, [selectionRange, body, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
 
 	function aceEditor_load(editor: any) {
-		console.info('aceEditor_load');
 		setEditor(editor);
 	}
 
