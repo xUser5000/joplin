@@ -1,3 +1,5 @@
+import { OnChangeEvent } from '../../../utils/types';
+
 export interface AceEditorProps {
 	style: any;
 	theme: number;
