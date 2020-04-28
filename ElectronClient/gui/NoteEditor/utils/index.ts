@@ -18,6 +18,7 @@ export interface FormNote {
 	bodyEditorContent?: any,
 	markup_language: number,
 	user_updated_time: number,
+	encryption_applied: boolean,
 
 	hasChanged: boolean,
 

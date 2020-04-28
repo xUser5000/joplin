@@ -290,6 +290,7 @@ function NoteEditor(props: NoteTextProps) {
 			originalCss: originalCss,
 			hasChanged: false,
 			user_updated_time: n.user_updated_time,
+			encryption_applied: n.encryption_applied,
 		});
 
 		await handleResourceDownloadMode(n.body);
@@ -971,6 +972,17 @@ function NoteEditor(props: NoteTextProps) {
 		});
 	}, [props.dispatch, formNote]);
 
+	function renderNoNotes(rootStyle:any) {
+		const emptyDivStyle = Object.assign(
+			{
+				backgroundColor: 'black',
+				opacity: 0.1,
+			},
+			rootStyle
+		);
+		return <div style={emptyDivStyle}></div>;
+	}
+
 	function renderNoteToolbar() {
 		const toolbarStyle = {
 			// marginTop: 4,
@@ -1100,6 +1112,10 @@ function NoteEditor(props: NoteTextProps) {
 				onClose={localSearch_close}
 			/>
 		);
+	}
+
+	if (formNote.encryption_applied) {
+		return renderNoNotes(styles.root);
 	}
 
 	return (

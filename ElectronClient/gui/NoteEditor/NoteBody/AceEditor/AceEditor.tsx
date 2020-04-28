@@ -136,6 +136,9 @@ function styles_(props: AceEditorProps) {
 				position: 'relative',
 				display: 'flex',
 				flex: 1,
+				borderLeftWidth: 1,
+				borderLeftColor: theme.dividerColor,
+				borderLeftStyle: 'solid',
 			},
 			viewer: {
 				display: 'flex',
@@ -634,7 +637,14 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		const interval = contentKeyHasChangedRef.current ? 0 : 500;
 
 		const timeoutId = setTimeout(async () => {
-			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions());
+			let bodyToRender = props.content;
+
+			if (!bodyToRender.trim() && props.visiblePanes.indexOf('viewer') >= 0 && props.visiblePanes.indexOf('editor') < 0) {
+				// Fixes https://github.com/laurent22/joplin/issues/217
+				bodyToRender = `<i>${_('This note has no content. Click on "%s" to toggle the editor and edit the note.', _('Layout'))}</i>`;
+			}
+
+			const result = await props.markupToHtml(props.contentMarkupLanguage, bodyToRender, markupRenderOptions());
 			if (cancelled) return;
 			setRenderedBody(result);
 		}, interval);
@@ -643,7 +653,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 			cancelled = true;
 			clearTimeout(timeoutId);
 		};
-	}, [props.content, props.contentMarkupLanguage]);
+	}, [props.content, props.contentMarkupLanguage, props.visiblePanes]);
 
 	useEffect(() => {
 		const options: any = {
@@ -681,6 +691,8 @@ function AceEditor(props: AceEditorProps, ref: any) {
 			// So instead setting the width 0.
 			output.width = 1;
 			output.maxWidth = 1;
+		} else if (!props.visiblePanes.includes('editor')) {
+			output.borderLeftStyle = 'none';
 		}
 		return output;
 	}, [styles.cellViewer, props.visiblePanes]);
