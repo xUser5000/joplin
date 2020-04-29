@@ -79,6 +79,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody()); // Viewer content
 	const [editor, setEditor] = useState(null);
 	const [lastKeys, setLastKeys] = useState([]);
+	const [webviewReady, setWebviewReady] = useState(false);
 
 	const previousRenderedBody = usePrevious(renderedBody);
 	const previousSearchMarkers = usePrevious(props.searchMarkers);
@@ -529,6 +530,10 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		};
 	}, [editor]);
 
+	const webview_domReady = useCallback(() => {
+		setWebviewReady(true);
+	}, []);
+
 	const webview_ipcMessage = useCallback((event: any) => {
 		const msg = event.channel ? event.channel : '';
 		const args = event.args;
@@ -559,7 +564,6 @@ function AceEditor(props: AceEditorProps, ref: any) {
 
 			const result = await props.markupToHtml(props.contentMarkupLanguage, bodyToRender, markupRenderOptions({ resourceInfos: props.resourceInfos }));
 			if (cancelled) return;
-			console.info('setRenderedBody');
 			setRenderedBody(result);
 		}, interval);
 
@@ -570,13 +574,14 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	}, [props.content, props.contentMarkupLanguage, props.visiblePanes, props.resourceInfos]);
 
 	useEffect(() => {
+		if (!webviewReady) return;
+
 		const options: any = {
 			pluginAssets: renderedBody.pluginAssets,
 			downloadResources: Setting.value('sync.resourceDownloadMode'),
 		};
-		console.info('setHtml');
 		webviewRef.current.wrappedInstance.send('setHtml', renderedBody.html, options);
-	}, [renderedBody]);
+	}, [renderedBody, webviewReady]);
 
 	useEffect(() => {
 		if (props.searchMarkers !== previousSearchMarkers || renderedBody !== previousRenderedBody) {
@@ -655,6 +660,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 					ref={webviewRef}
 					viewerStyle={styles.viewer}
 					onIpcMessage={webview_ipcMessage}
+					onDomReady={webview_domReady}
 				/>
 			</div>
 		);

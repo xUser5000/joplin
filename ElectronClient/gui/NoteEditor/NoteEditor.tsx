@@ -66,9 +66,7 @@ function NoteEditor(props: NoteTextProps) {
 	const formNoteRef = useRef<FormNote>();
 	formNoteRef.current = { ...formNote };
 
-	const { resourceInfos } = useResourceInfos({ noteBody: formNote.body });
-
-	console.info('RRRRRRRRRRR');
+	const { resourceInfos } = useResourceInfos({ noteBody: formNote.body, contentKey: formNote.id });
 
 	const {
 		localSearch,
