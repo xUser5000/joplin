@@ -29,7 +29,6 @@ const { MarkupToHtml } = require('lib/joplin-renderer');
 const { _ } = require('lib/locale');
 const Note = require('lib/models/Note.js');
 const { bridge } = require('electron').remote.require('./bridge');
-const NoteListUtils = require('../utils/NoteListUtils');
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
 const eventManager = require('../../eventManager');
 const NoteRevisionViewer = require('../NoteRevisionViewer.min');
@@ -110,6 +109,8 @@ function NoteEditor(props: NoteTextProps) {
 				setFormNote((prev: FormNote) => {
 					return { ...prev, user_updated_time: savedNote.user_updated_time };
 				});
+
+				ExternalEditWatcher.instance().updateNoteFile(savedNote);
 
 				props.dispatch({
 					type: 'EDITOR_NOTE_STATUS_REMOVE',
@@ -367,7 +368,7 @@ function NoteEditor(props: NoteTextProps) {
 		}
 	}, [handleProvisionalFlag, formNote, isNewNote, titleHasBeenManuallyChanged]);
 
-	useWindowCommandHandler({ windowCommand: props.windowCommand, dispatch: props.dispatch, formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef });
+	useWindowCommandHandler({ windowCommand: props.windowCommand, dispatch: props.dispatch, formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef, saveNoteAndWait });
 
 	const onDrop = useDropHandler({ editorRef });
 
@@ -431,7 +432,6 @@ function NoteEditor(props: NoteTextProps) {
 			};
 
 			setFormNote(newFormNote);
-			editorRef.current.setContent(event.note.body);
 		}
 	}, [formNote]);
 
@@ -464,12 +464,17 @@ function NoteEditor(props: NoteTextProps) {
 		const cases: any = {
 
 			'startExternalEditing': async () => {
-				await saveNoteAndWait(formNote);
-				NoteListUtils.startExternalEditing(formNote.id);
+				props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'commandStartExternalEditing',
+				});
 			},
 
 			'stopExternalEditing': () => {
-				NoteListUtils.stopExternalEditing(formNote.id);
+				props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'commandStopExternalEditing',
+				});
 			},
 
 			'setTags': async () => {
@@ -575,7 +580,7 @@ function NoteEditor(props: NoteTextProps) {
 	}
 
 	const wysiwygBanner = props.bodyEditor !== 'TinyMCE' ? null : (
-		<div style={styles.warningBanner}>
+		<div style={{ ...styles.warningBanner, marginBottom: 10 }}>
 			This is an experimental WYSIWYG editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information.
 		</div>
 	);
@@ -585,8 +590,7 @@ function NoteEditor(props: NoteTextProps) {
 	}, []);
 
 	const tagStyle = {
-		// marginBottom: 10,
-		height: 30,
+		marginBottom: 10,
 	};
 
 	const tagList = props.selectedNoteTags.length ? <TagList style={tagStyle} items={props.selectedNoteTags} /> : null;

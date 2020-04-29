@@ -76,7 +76,6 @@ function markupRenderOptions(override: any = null) {
 function AceEditor(props: AceEditorProps, ref: any) {
 	const styles = styles_(props);
 
-	const [body, setBody] = useState(''); // Ace Editor text content
 	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody()); // Viewer content
 	const [editor, setEditor] = useState(null);
 	const [lastKeys, setLastKeys] = useState([]);
@@ -94,26 +93,31 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	const contentKeyHasChangedRef = useRef(false);
 	contentKeyHasChangedRef.current = previousContentKey !== props.contentKey;
 
-	const selectionRange = useSelectionRange(editor);
+	// The selection range changes all the time, when the caret moves or
+	// when the selection changes, so it's best not to make it part of the
+	// state as it would trigger too many unecessary updates.
+	const selectionRangeRef = useRef(null);
+	selectionRangeRef.current = useSelectionRange(editor);
+
 	const { resetScroll, setEditorPercentScroll, setViewerPercentScroll, editor_scroll } = useScrollHandler(editor, webviewRef, props.onScroll);
 
 	const aceEditor_change = useCallback((newBody: string) => {
-		setBody(newBody);
+		// setBody(newBody);
 		props_onChangeRef.current({ changeId: null, content: newBody });
 	}, []);
 
 	const wrapSelectionWithStrings = useCallback((string1: string, string2 = '', defaultText = '', replacementText: string = null, byLine = false) => {
 		if (!editor) return;
 
-		const selection = textOffsetSelection(selectionRange, body);
+		const selection = textOffsetSelection(selectionRangeRef.current, props.content);
 
-		let newBody = body;
+		let newBody = props.content;
 
 		if (selection && selection.start !== selection.end) {
-			const selectedLines = replacementText !== null ? replacementText : body.substr(selection.start, selection.end - selection.start);
+			const selectedLines = replacementText !== null ? replacementText : props.content.substr(selection.start, selection.end - selection.start);
 			const selectedStrings = byLine ? selectedLines.split(/\r?\n/) : [selectedLines];
 
-			newBody = body.substr(0, selection.start);
+			newBody = props.content.substr(0, selection.start);
 
 			let startCursorPos, endCursorPos;
 
@@ -130,9 +134,9 @@ function AceEditor(props: AceEditorProps, ref: any) {
 
 			}
 
-			newBody += body.substr(selection.end);
+			newBody += props.content.substr(selection.end);
 
-			const r = selectionRange;
+			const r = selectionRangeRef.current;
 
 			// Because some insertion strings will have newlines, we'll need to account for them
 			const str1Split = string1.split(/\r?\n/);
@@ -172,7 +176,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 			}
 
 			setTimeout(() => {
-				const range = selectionRange;
+				const range = selectionRangeRef.current;
 				range.setStart(newRange.start.row, newRange.start.column);
 				range.setEnd(newRange.end.row, newRange.end.column);
 				editor.getSession().getSelection().setSelectionRange(range, false);
@@ -180,9 +184,9 @@ function AceEditor(props: AceEditorProps, ref: any) {
 			}, 10);
 		} else {
 			const middleText = replacementText !== null ? replacementText : defaultText;
-			const textOffset = currentTextOffset(editor, body);
-			const s1 = body.substr(0, textOffset);
-			const s2 = body.substr(textOffset);
+			const textOffset = currentTextOffset(editor, props.content);
+			const s1 = props.content.substr(0, textOffset);
+			const s2 = props.content.substr(textOffset);
 			newBody = s1 + string1 + middleText + string2 + s2;
 
 			const p = textOffsetToCursorPosition(textOffset + string1.length, newBody);
@@ -196,7 +200,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 
 			setTimeout(() => {
 				if (middleText && newRange) {
-					const range = selectionRange;
+					const range = selectionRangeRef.current;
 					range.setStart(newRange.start.row, newRange.start.column);
 					range.setEnd(newRange.end.row, newRange.end.column);
 					editor.getSession().getSelection().setSelectionRange(range, false);
@@ -210,20 +214,20 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		}
 
 		aceEditor_change(newBody);
-	}, [editor, selectionRange, body, aceEditor_change]);
+	}, [editor, props.content, aceEditor_change]);
 
 	const addListItem = useCallback((string1, string2 = '', defaultText = '', byLine = false) => {
 		let newLine = '\n';
-		const range = selectionRange;
-		if (!range || (range.start.row === range.end.row && !selectionRangeCurrentLine(range, body))) {
+		const range = selectionRangeRef.current;
+		if (!range || (range.start.row === range.end.row && !selectionRangeCurrentLine(range, props.content))) {
 			newLine = '';
 		}
 		wrapSelectionWithStrings(newLine + string1, string2, defaultText, null, byLine);
-	}, [wrapSelectionWithStrings, selectionRange, body]);
+	}, [wrapSelectionWithStrings, props.content]);
 
 	useImperativeHandle(ref, () => {
 		return {
-			content: () => body,
+			content: () => props.content,
 			setContent: (body: string) => {
 				aceEditor_change(body);
 			},
@@ -258,7 +262,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 					if (cmd.value.type === 'notes') {
 						wrapSelectionWithStrings('', '', '', cmd.value.markdownTags.join('\n'));
 					} else if (cmd.value.type === 'files') {
-						const newBody = await commandAttachFileToBody(body, cmd.value.paths, { createFileURL: !!cmd.value.createFileURL });
+						const newBody = await commandAttachFileToBody(props.content, cmd.value.paths, { createFileURL: !!cmd.value.createFileURL });
 						aceEditor_change(newBody);
 					} else {
 						reg.logger().warn('AceEditor: unsupported drop item: ', cmd);
@@ -278,8 +282,8 @@ function AceEditor(props: AceEditorProps, ref: any) {
 							if (url) wrapSelectionWithStrings('[', `](${url})`);
 						},
 						textCode: () => {
-							const selection = textOffsetSelection(selectionRange, body);
-							const string = body.substr(selection.start, selection.end - selection.start);
+							const selection = textOffsetSelection(selectionRangeRef.current, props.content);
+							const string = props.content.substr(selection.start, selection.end - selection.start);
 
 							// Look for newlines
 							const match = string.match(/\r?\n/);
@@ -296,16 +300,17 @@ function AceEditor(props: AceEditorProps, ref: any) {
 						},
 						insertText: (value: any) => wrapSelectionWithStrings(value),
 						attachFile: async () => {
-							const newBody = await commandAttachFileToBody(body);
+							const selection = textOffsetSelection(selectionRangeRef.current, props.content);
+							const newBody = await commandAttachFileToBody(props.content, null, { position: selection.start });
 							if (newBody) aceEditor_change(newBody);
 						},
 						textNumberedList: () => {
-							let bulletNumber = markdownUtils.olLineNumber(selectionRangeCurrentLine(selectionRange, body));
-							if (!bulletNumber) bulletNumber = markdownUtils.olLineNumber(selectionRangePreviousLine(selectionRange, body));
+							let bulletNumber = markdownUtils.olLineNumber(selectionRangeCurrentLine(selectionRangeRef.current, props.content));
+							if (!bulletNumber) bulletNumber = markdownUtils.olLineNumber(selectionRangePreviousLine(selectionRangeRef.current, props.content));
 							if (!bulletNumber) bulletNumber = 0;
 							addListItem(`${bulletNumber + 1}. `, '', _('List item'), true);
 						},
-						textBulletedList: () => addListItem('- [ ] ', '', _('List item'), true),
+						textBulletedList: () => addListItem('- ', '', _('List item'), true),
 						textCheckbox: () => addListItem('- [ ] ', '', _('List item'), true),
 						textHeading: () => addListItem('## ','','', true),
 						textHorizontalRule: () => addListItem('* * *'),
@@ -322,7 +327,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 				return true;
 			},
 		};
-	}, [editor, body, wrapSelectionWithStrings, selectionRange, selectionRangeCurrentLine, aceEditor_change, setEditorPercentScroll, setViewerPercentScroll, resetScroll, renderedBody]);
+	}, [editor, props.content, addListItem, wrapSelectionWithStrings, selectionRangeCurrentLine, aceEditor_change, setEditorPercentScroll, setViewerPercentScroll, resetScroll, renderedBody]);
 
 	const onEditorPaste = useCallback(async (event: any = null) => {
 		const formats = clipboard.availableFormats();
@@ -330,7 +335,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 			const format = formats[i].toLowerCase();
 			const formatType = format.split('/')[0];
 
-			const position = currentTextOffset(editor, body);
+			const position = currentTextOffset(editor, props.content);
 
 			if (formatType === 'image') {
 				if (event) event.preventDefault();
@@ -341,13 +346,13 @@ function AceEditor(props: AceEditorProps, ref: any) {
 				const filePath = `${Setting.value('tempDir')}/${md5(Date.now())}.${fileExt}`;
 
 				await shim.writeImageToFile(image, format, filePath);
-				const newBody = await commandAttachFileToBody(body, [filePath], { position });
+				const newBody = await commandAttachFileToBody(props.content, [filePath], { position });
 				await shim.fsDriver().remove(filePath);
 
 				aceEditor_change(newBody);
 			}
 		}
-	}, [editor, body, aceEditor_change]);
+	}, [editor, props.content, aceEditor_change]);
 
 	const onEditorKeyDown = useCallback((event: any) => {
 		setLastKeys(prevLastKeys => {
@@ -359,32 +364,32 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	}, []);
 
 	const editorCutText = useCallback(() => {
-		const text = selectedText(selectionRange, body);
+		const text = selectedText(selectionRangeRef.current, props.content);
 		if (!text) return;
 
 		clipboard.writeText(text);
 
-		const s = textOffsetSelection(selectionRange, body);
+		const s = textOffsetSelection(selectionRangeRef.current, props.content);
 		if (!s || s.start === s.end) return;
 
-		const s1 = body.substr(0, s.start);
-		const s2 = body.substr(s.end);
+		const s1 = props.content.substr(0, s.start);
+		const s2 = props.content.substr(s.end);
 
 		aceEditor_change(s1 + s2);
 
 		setTimeout(() => {
-			const range = selectionRange;
+			const range = selectionRangeRef.current;
 			range.setStart(range.start.row, range.start.column);
 			range.setEnd(range.start.row, range.start.column);
 			editor.getSession().getSelection().setSelectionRange(range, false);
 			editor.focus();
 		}, 10);
-	}, [selectionRange, body, editor, aceEditor_change]);
+	}, [props.content, editor, aceEditor_change]);
 
 	const editorCopyText = useCallback(() => {
-		const text = selectedText(selectionRange, body);
+		const text = selectedText(selectionRangeRef.current, props.content);
 		clipboard.writeText(text);
-	}, [selectionRange, body]);
+	}, [props.content]);
 
 	const editorPasteText = useCallback(() => {
 		wrapSelectionWithStrings(clipboard.readText(), '', '', '');
@@ -393,7 +398,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 	const onEditorContextMenu = useCallback(() => {
 		const menu = new Menu();
 
-		const hasSelectedText = !!selectedText(selectionRange, body);
+		const hasSelectedText = !!selectedText(selectionRangeRef.current, props.content);
 		const clipboardText = clipboard.readText();
 
 		menu.append(
@@ -432,7 +437,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		);
 
 		menu.popup(bridge().window());
-	}, [selectionRange, body, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
+	}, [props.content, editorCutText, editorPasteText, editorCopyText, onEditorPaste]);
 
 	function aceEditor_load(editor: any) {
 		setEditor(editor);
@@ -503,7 +508,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		indentOrig.current = editor.indent;
 		const localIndentOrig = indentOrig.current;
 		editor.indent = function() {
-			const range = selectionRange;
+			const range = selectionRangeRef.current;
 			if (range.isEmpty()) {
 				const row = range.start.row;
 				const tokens = this.session.getTokens(row);
@@ -522,7 +527,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 
 			localIndentOrig.call(this);
 		};
-	}, [editor, selectionRange]);
+	}, [editor]);
 
 	const webview_ipcMessage = useCallback((event: any) => {
 		const msg = event.channel ? event.channel : '';
@@ -530,14 +535,14 @@ function AceEditor(props: AceEditorProps, ref: any) {
 		const arg0 = args && args.length >= 1 ? args[0] : null;
 
 		if (msg.indexOf('checkboxclick:') === 0) {
-			const newBody = shared.toggleCheckbox(msg, body);
+			const newBody = shared.toggleCheckbox(msg, props.content);
 			aceEditor_change(newBody);
 		} else if (msg === 'percentScroll') {
 			setEditorPercentScroll(arg0);
 		} else {
 			props.onMessage(event);
 		}
-	}, [props.onMessage, body, aceEditor_change]);
+	}, [props.onMessage, props.content, aceEditor_change]);
 
 	useEffect(() => {
 		let cancelled = false;

@@ -536,7 +536,7 @@ class Setting extends BaseModel {
 			} },
 
 			'editor.keyboardMode': {
-				value: 'default',
+				value: '',
 				type: Setting.TYPE_STRING,
 				public: true,
 				appTypes: ['desktop'],
@@ -545,7 +545,7 @@ class Setting extends BaseModel {
 				label: () => _('Keyboard Mode'),
 				options: () => {
 					const output = {};
-					output['default'] = _('Default');
+					output[''] = _('Default');
 					output['emacs'] = _('Emacs');
 					output['vim'] = _('Vim');
 					return output;
