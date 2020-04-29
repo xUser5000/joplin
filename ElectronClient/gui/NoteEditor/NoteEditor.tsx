@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import TinyMCE from './NoteBody/TinyMCE/TinyMCE';
 import AceEditor  from './NoteBody/AceEditor/AceEditor';
 import { connect } from 'react-redux';
-import AsyncActionQueue from '../../lib/AsyncActionQueue';
 import MultiNoteActions from '../MultiNoteActions';
 import NoteToolbar from '../NoteToolbar/NoteToolbar';
 import { htmlToMarkdown, formNoteToNote } from './utils';
@@ -13,9 +12,12 @@ import useNoteSearchBar from './utils/useNoteSearchBar';
 import useMessageHandler from './utils/useMessageHandler';
 import useWindowCommandHandler from './utils/useWindowCommandHandler';
 import useDropHandler from './utils/useDropHandler';
+import useMarkupToHtml from './utils/useMarkupToHtml';
+import useFormNote, { OnLoadEvent } from './utils/useFormNote';
+import useResourceInfos from './utils/useResourceInfos';
 import styles_ from './styles';
-import { NoteTextProps, FormNote, defaultFormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent } from './utils/types';
-import { handleResourceDownloadMode, clearResourceCache, attachedResources, installResourceHandling, uninstallResourceHandling, attachResources } from './utils/resourceHandling';
+import { NoteTextProps, FormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent } from './utils/types';
+import { attachResources } from './utils/resourceHandling';
 
 const { themeStyle } = require('../../theme.js');
 const NoteSearchBar = require('../NoteSearchBar.min.js');
@@ -23,9 +25,7 @@ const { reg } = require('lib/registry.js');
 const { time } = require('lib/time-utils.js');
 const markupLanguageUtils = require('lib/markupLanguageUtils');
 const usePrevious = require('lib/hooks/usePrevious').default;
-const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 const Setting = require('lib/models/Setting');
-const { MarkupToHtml } = require('lib/joplin-renderer');
 const { _ } = require('lib/locale');
 const Note = require('lib/models/Note.js');
 const { bridge } = require('electron').remote.require('./bridge');
@@ -35,20 +35,40 @@ const NoteRevisionViewer = require('../NoteRevisionViewer.min');
 const TagList = require('../TagList.min.js');
 
 function NoteEditor(props: NoteTextProps) {
-	const [formNote, setFormNote] = useState<FormNote>(defaultFormNote());
 	const [showRevisions, setShowRevisions] = useState(false);
-	const prevSyncStarted = usePrevious(props.syncStarted);
-	const [isNewNote, setIsNewNote] = useState(false);
 	const [titleHasBeenManuallyChanged, setTitleHasBeenManuallyChanged] = useState(false);
 	const [scrollWhenReady, setScrollWhenReady] = useState<ScrollOptions>(null);
-	const [resourceInfos, setResourceInfos] = useState<any>({});
 
 	const editorRef = useRef<any>();
 	const titleInputRef = useRef<any>();
-	const formNoteRef = useRef<FormNote>();
-	formNoteRef.current = { ...formNote };
 	const isMountedRef = useRef(true);
 	const noteSearchBarRef = useRef(null);
+
+	const formNote_beforeLoad = useCallback((event:OnLoadEvent) => {
+		saveNoteIfWillChange(event.formNote);
+		setShowRevisions(false);
+	}, []);
+
+	const formNote_afterLoad = useCallback(() => {
+		setTitleHasBeenManuallyChanged(false);
+	}, []);
+
+	const { formNote, setFormNote, isNewNote } = useFormNote({
+		syncStarted: props.syncStarted,
+		noteId: props.noteId,
+		isProvisional: props.isProvisional,
+		titleInputRef: titleInputRef,
+		editorRef: editorRef,
+		onBeforeLoad: formNote_beforeLoad,
+		onAfterLoad: formNote_afterLoad,
+	});
+
+	const formNoteRef = useRef<FormNote>();
+	formNoteRef.current = { ...formNote };
+
+	const { resourceInfos } = useResourceInfos({ noteBody: formNote.body });
+
+	console.info('RRRRRRRRRRR');
 
 	const {
 		localSearch,
@@ -64,36 +84,9 @@ function NoteEditor(props: NoteTextProps) {
 
 	// If the note has been modified in another editor, wait for it to be saved
 	// before loading it in this editor.
-	const waitingToSaveNote = props.noteId && formNote.id !== props.noteId && props.editorNoteStatuses[props.noteId] === 'saving';
+	// const waitingToSaveNote = props.noteId && formNote.id !== props.noteId && props.editorNoteStatuses[props.noteId] === 'saving';
 
 	const styles = styles_(props);
-
-	async function initNoteState(n: any) {
-		let originalCss = '';
-		if (n.markup_language === MarkupToHtml.MARKUP_LANGUAGE_HTML) {
-			const htmlToHtml = new HtmlToHtml();
-			const splitted = htmlToHtml.splitHtml(n.body);
-			originalCss = splitted.css;
-		}
-
-		setFormNote({
-			id: n.id,
-			title: n.title,
-			body: n.body,
-			is_todo: n.is_todo,
-			parent_id: n.parent_id,
-			bodyWillChangeId: 0,
-			bodyChangeId: 0,
-			markup_language: n.markup_language,
-			saveActionQueue: new AsyncActionQueue(300),
-			originalCss: originalCss,
-			hasChanged: false,
-			user_updated_time: n.user_updated_time,
-			encryption_applied: n.encryption_applied,
-		});
-
-		await handleResourceDownloadMode(n.body);
-	}
 
 	function scheduleSaveNote(formNote: FormNote) {
 		if (!formNote.saveActionQueue) throw new Error('saveActionQueue is not set!!'); // Sanity check
@@ -140,40 +133,7 @@ function NoteEditor(props: NoteTextProps) {
 		return formNote.saveActionQueue.waitForAllDone();
 	}
 
-	const markupToHtml = useCallback(async (markupLanguage: number, md: string, options: any = null): Promise<any> => {
-		options = {
-			replaceResourceInternalToExternalLinks: false,
-			...options,
-		};
-
-		md = md || '';
-
-		const theme = themeStyle(props.theme);
-		let resources = {};
-
-		if (options.replaceResourceInternalToExternalLinks) {
-			md = await Note.replaceResourceInternalToExternalLinks(md, { useAbsolutePaths: true });
-		} else {
-			resources = await attachedResources(md);
-		}
-
-		delete options.replaceResourceInternalToExternalLinks;
-
-		const markupToHtml = markupLanguageUtils.newMarkupToHtml({
-			resourceBaseUrl: `file://${Setting.value('resourceDir')}/`,
-		});
-
-		const result = await markupToHtml.render(markupLanguage, md, theme, Object.assign({}, {
-			codeTheme: theme.codeThemeCss,
-			userCss: props.customCss || '',
-			resources: resources,
-			postMessageSyntax: 'ipcProxySendToHost',
-			splitted: true,
-			externalAssetsOnly: true,
-		}, options));
-
-		return result;
-	}, [props.theme, props.customCss, resourceInfos]);
+	const markupToHtml = useMarkupToHtml({ themeId: props.theme, customCss: props.customCss });
 
 	const allAssets = useCallback(async (markupLanguage: number): Promise<any[]> => {
 		const theme = themeStyle(props.theme);
@@ -194,22 +154,6 @@ function NoteEditor(props: NoteTextProps) {
 		}
 	}, [props.isProvisional, formNote.id]);
 
-	const refreshResource = useCallback(async function(event) {
-		const resourceIds = await Note.linkedResourceIds(formNote.body);
-		if (resourceIds.indexOf(event.id) >= 0) {
-			clearResourceCache();
-			setResourceInfos(await attachedResources(formNote.body));
-		}
-	}, [formNote.body]);
-
-	useEffect(() => {
-		installResourceHandling(refreshResource);
-
-		return () => {
-			uninstallResourceHandling(refreshResource);
-		};
-	}, [refreshResource]);
-
 	useEffect(() => {
 		// This is not exactly a hack but a bit ugly. If the note was changed (willChangeId > 0) but not
 		// yet saved, we need to save it now before the component is unmounted. However, we can't put
@@ -220,94 +164,6 @@ function NoteEditor(props: NoteTextProps) {
 			saveNoteIfWillChange(formNoteRef.current);
 		};
 	}, []);
-
-	useEffect(() => {
-		// Check that synchronisation has just finished - and
-		// if the note has never been changed, we reload it.
-		// If the note has already been changed, it's a conflict
-		// that's already been handled by the synchronizer.
-
-		if (!prevSyncStarted) return () => {};
-		if (props.syncStarted) return () => {};
-		if (formNote.hasChanged) return () => {};
-
-		reg.logger().debug('Sync has finished and note has never been changed - reloading it');
-
-		let cancelled = false;
-
-		const loadNote = async () => {
-			const n = await Note.load(props.noteId);
-			if (cancelled) return;
-
-			// Normally should not happened because if the note has been deleted via sync
-			// it would not have been loaded in the editor (due to note selection changing
-			// on delete)
-			if (!n) {
-				reg.logger().warn('Trying to reload note that has been deleted:', props.noteId);
-				return;
-			}
-
-			await initNoteState(n);
-		};
-
-		loadNote();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [prevSyncStarted, props.syncStarted, formNote]);
-
-	useEffect(() => {
-		if (!props.noteId) return () => {};
-
-		if (formNote.id === props.noteId) return () => {};
-
-		if (waitingToSaveNote) return () => {};
-
-		let cancelled = false;
-
-		reg.logger().debug('Loading existing note', props.noteId);
-
-		saveNoteIfWillChange(formNote);
-
-		function handleAutoFocus(noteIsTodo: boolean) {
-			if (!props.isProvisional) return;
-
-			const focusSettingName = noteIsTodo ? 'newTodoFocus' : 'newNoteFocus';
-
-			requestAnimationFrame(() => {
-				if (Setting.value(focusSettingName) === 'title') {
-					if (titleInputRef.current) titleInputRef.current.focus();
-				} else {
-					if (editorRef.current) editorRef.current.execCommand({ name: 'focus' });
-				}
-			});
-		}
-
-		setShowRevisions(false);
-
-		async function loadNote() {
-			// if (formNote.saveActionQueue) await formNote.saveActionQueue.waitForAllDone();
-
-			const n = await Note.load(props.noteId);
-			if (cancelled) return;
-			if (!n) throw new Error(`Cannot find note with ID: ${props.noteId}`);
-			reg.logger().debug('Loaded note:', n);
-
-			await initNoteState(n);
-
-			setIsNewNote(props.isProvisional);
-			setTitleHasBeenManuallyChanged(false);
-
-			handleAutoFocus(!!n.is_todo);
-		}
-
-		loadNote();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [props.noteId, props.isProvisional, formNote, waitingToSaveNote, props.lastEditorScrollPercents, props.selectedNoteHash]);
 
 	const previousNoteId = usePrevious(formNote.id);
 
@@ -559,7 +415,7 @@ function NoteEditor(props: NoteTextProps) {
 		markupToHtml: markupToHtml,
 		allAssets: allAssets,
 		attachResources: attachResources,
-		disabled: waitingToSaveNote,
+		disabled: false,
 		theme: props.theme,
 		dispatch: props.dispatch,
 		noteToolbar: renderNoteToolbar(),
@@ -665,7 +521,7 @@ function NoteEditor(props: NoteTextProps) {
 					<input
 						type="text"
 						ref={titleInputRef}
-						disabled={waitingToSaveNote}
+						// disabled={waitingToSaveNote}
 						placeholder={props.isProvisional ? _('Creating new %s...', formNote.is_todo ? _('to-do') : _('note')) : ''}
 						style={styles.titleInput}
 						onChange={onTitleChange}

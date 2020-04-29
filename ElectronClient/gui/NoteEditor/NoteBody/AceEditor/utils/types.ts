@@ -20,6 +20,7 @@ export interface AceEditorProps {
 	searchMarkers: any,
 	visiblePanes: string[],
 	keyboardMode: string,
+	resourceInfos: any[],
 }
 
 export interface RenderedBody {

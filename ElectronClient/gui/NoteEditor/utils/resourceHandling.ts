@@ -5,11 +5,8 @@ const Resource = require('lib/models/Resource.js');
 const { shim } = require('lib/shim');
 const { bridge } = require('electron').remote.require('./bridge');
 const ResourceFetcher = require('lib/services/ResourceFetcher.js');
-const DecryptionWorker = require('lib/services/DecryptionWorker.js');
 const { reg } = require('lib/registry.js');
 const joplinRendererUtils = require('lib/joplin-renderer').utils;
-
-let resourceCache_: any = {};
 
 export async function handleResourceDownloadMode(noteBody: string) {
 	if (noteBody && Setting.value('sync.resourceDownloadMode') === 'auto') {
@@ -17,6 +14,8 @@ export async function handleResourceDownloadMode(noteBody: string) {
 		await ResourceFetcher.instance().markForDownload(resourceIds);
 	}
 }
+
+let resourceCache_: any = {};
 
 export function clearResourceCache() {
 	resourceCache_ = {};
@@ -48,18 +47,6 @@ export async function attachedResources(noteBody: string): Promise<any> {
 	}
 
 	return output;
-}
-
-export function installResourceHandling(refreshResourceHandler: Function) {
-	ResourceFetcher.instance().on('downloadComplete', refreshResourceHandler);
-	ResourceFetcher.instance().on('downloadStarted', refreshResourceHandler);
-	DecryptionWorker.instance().on('resourceDecrypted', refreshResourceHandler);
-}
-
-export function uninstallResourceHandling(refreshResourceHandler: Function) {
-	ResourceFetcher.instance().off('downloadComplete', refreshResourceHandler);
-	ResourceFetcher.instance().off('downloadStarted', refreshResourceHandler);
-	DecryptionWorker.instance().off('resourceDecrypted', refreshResourceHandler);
 }
 
 export async function attachResources() {

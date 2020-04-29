@@ -65,7 +65,11 @@
 				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/utils/types.js",
 				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/styles/index.js",
 				"ElectronClient/gui/note-viewer/lib.js",
-				"ReactNativeClient/lib/hooks/useImperativeHandlerDebugger.js"
+				"ReactNativeClient/lib/hooks/useImperativeHandlerDebugger.js",
+				"ElectronClient/gui/NoteEditor/utils/useMarkupToHtml.js",
+				"ElectronClient/gui/NoteEditor/utils/useResourceRefresher.js",
+				"ElectronClient/gui/NoteEditor/utils/useFormNote.js",
+				"ElectronClient/gui/NoteEditor/utils/useResourceInfos.js"
 			],
 			"folder_exclude_patterns":
 			[

@@ -643,7 +643,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 		let cancelled = false;
 
 		const loadContent = async () => {
-			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions());
+			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions({ resourceInfos: props.resourceInfos }));
 			if (cancelled) return;
 
 			editor.setContent(result.html);

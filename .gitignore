@@ -64,8 +64,11 @@ ElectronClient/gui/NoteEditor/utils/index.js
 ElectronClient/gui/NoteEditor/utils/resourceHandling.js
 ElectronClient/gui/NoteEditor/utils/types.js
 ElectronClient/gui/NoteEditor/utils/useDropHandler.js
+ElectronClient/gui/NoteEditor/utils/useFormNote.js
+ElectronClient/gui/NoteEditor/utils/useMarkupToHtml.js
 ElectronClient/gui/NoteEditor/utils/useMessageHandler.js
 ElectronClient/gui/NoteEditor/utils/useNoteSearchBar.js
+ElectronClient/gui/NoteEditor/utils/useResourceInfos.js
 ElectronClient/gui/NoteEditor/utils/useSearchMarkers.js
 ElectronClient/gui/NoteEditor/utils/useWindowCommandHandler.js
 ElectronClient/gui/NoteToolbar/NoteToolbar.js

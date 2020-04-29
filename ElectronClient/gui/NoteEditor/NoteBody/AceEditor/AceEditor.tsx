@@ -557,8 +557,9 @@ function AceEditor(props: AceEditorProps, ref: any) {
 				bodyToRender = `<i>${_('This note has no content. Click on "%s" to toggle the editor and edit the note.', _('Layout'))}</i>`;
 			}
 
-			const result = await props.markupToHtml(props.contentMarkupLanguage, bodyToRender, markupRenderOptions());
+			const result = await props.markupToHtml(props.contentMarkupLanguage, bodyToRender, markupRenderOptions({ resourceInfos: props.resourceInfos }));
 			if (cancelled) return;
+			console.info('setRenderedBody');
 			setRenderedBody(result);
 		}, interval);
 
@@ -566,13 +567,14 @@ function AceEditor(props: AceEditorProps, ref: any) {
 			cancelled = true;
 			clearTimeout(timeoutId);
 		};
-	}, [props.content, props.contentMarkupLanguage, props.visiblePanes]);
+	}, [props.content, props.contentMarkupLanguage, props.visiblePanes, props.resourceInfos]);
 
 	useEffect(() => {
 		const options: any = {
 			pluginAssets: renderedBody.pluginAssets,
 			downloadResources: Setting.value('sync.resourceDownloadMode'),
 		};
+		console.info('setHtml');
 		webviewRef.current.wrappedInstance.send('setHtml', renderedBody.html, options);
 	}, [renderedBody]);
 
