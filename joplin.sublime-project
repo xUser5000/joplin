@@ -64,7 +64,8 @@
 				"yarn.lock",
 				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/utils/types.js",
 				"ElectronClient/gui/NoteEditor/NoteBody/AceEditor/styles/index.js",
-				"ElectronClient/gui/note-viewer/lib.js"
+				"ElectronClient/gui/note-viewer/lib.js",
+				"ReactNativeClient/lib/hooks/useImperativeHandlerDebugger.js"
 			],
 			"folder_exclude_patterns":
 			[

@@ -768,6 +768,8 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 		editor.on('paste', onPaste);
 		editor.on('cut', onChangeHandler);
 		editor.on('joplinChange', onChangeHandler);
+		editor.on('Undo', onChangeHandler);
+		editor.on('Redo', onChangeHandler);
 		editor.on('ExecCommand', onExecCommand);
 
 		return () => {
@@ -777,6 +779,8 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 				editor.off('paste', onPaste);
 				editor.off('cut', onChangeHandler);
 				editor.off('joplinChange', onChangeHandler);
+				editor.off('Undo', onChangeHandler);
+				editor.off('Redo', onChangeHandler);
 				editor.off('ExecCommand', onExecCommand);
 			} catch (error) {
 				console.warn('Error removing events', error);

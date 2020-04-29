@@ -22,9 +22,9 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 		async function processCommand() {
 			const command = windowCommand;
 
-			reg.logger().debug('NoteEditor::useWindowCommandHandler:', command);
-
 			if (!command || !formNote) return;
+
+			reg.logger().debug('NoteEditor::useWindowCommandHandler:', command);
 
 			const editorCmd: EditorCommand = { name: '', value: command.value };
 			let fn: Function = null;

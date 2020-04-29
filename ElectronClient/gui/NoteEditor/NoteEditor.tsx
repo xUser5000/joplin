@@ -652,7 +652,7 @@ function NoteEditor(props: NoteTextProps) {
 		);
 	}
 
-	if (formNote.encryption_applied) {
+	if (formNote.encryption_applied || !formNote.id) {
 		return renderNoNotes(styles.root);
 	}
 
