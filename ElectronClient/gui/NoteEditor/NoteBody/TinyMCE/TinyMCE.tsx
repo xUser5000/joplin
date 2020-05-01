@@ -531,7 +531,7 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 
 							const html = [];
 							for (const resource of resources) {
-								const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resource.markdownTag, { bodyOnly: true });
+								const result = await markupToHtml.current(MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN, resource.markdownTag, markupRenderOptions({ bodyOnly: true }));
 								html.push(result.html);
 							}
 

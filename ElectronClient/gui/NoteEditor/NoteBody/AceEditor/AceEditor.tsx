@@ -302,7 +302,7 @@ function AceEditor(props: AceEditorProps, ref: any) {
 						insertText: (value: any) => wrapSelectionWithStrings(value),
 						attachFile: async () => {
 							const selection = textOffsetSelection(selectionRangeRef.current, props.content);
-							const newBody = await commandAttachFileToBody(props.content, null, { position: selection.start });
+							const newBody = await commandAttachFileToBody(props.content, null, { position: selection ? selection.start : 0 });
 							if (newBody) aceEditor_change(newBody);
 						},
 						textNumberedList: () => {
