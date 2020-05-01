@@ -16,7 +16,7 @@ export default function useMarkupToHtml(dependencies:HookDependencies) {
 	return useCallback(async (markupLanguage: number, md: string, options: any = null): Promise<any> => {
 		options = {
 			replaceResourceInternalToExternalLinks: false,
-			resourceInfos: [],
+			resourceInfos: {},
 			...options,
 		};
 

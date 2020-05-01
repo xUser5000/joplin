@@ -14,7 +14,6 @@ import useWindowCommandHandler from './utils/useWindowCommandHandler';
 import useDropHandler from './utils/useDropHandler';
 import useMarkupToHtml from './utils/useMarkupToHtml';
 import useFormNote, { OnLoadEvent } from './utils/useFormNote';
-import useResourceInfos from './utils/useResourceInfos';
 import styles_ from './styles';
 import { NoteTextProps, FormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent } from './utils/types';
 import { attachResources } from './utils/resourceHandling';
@@ -53,7 +52,7 @@ function NoteEditor(props: NoteTextProps) {
 		setTitleHasBeenManuallyChanged(false);
 	}, []);
 
-	const { formNote, setFormNote, isNewNote } = useFormNote({
+	const { formNote, setFormNote, isNewNote, resourceInfos } = useFormNote({
 		syncStarted: props.syncStarted,
 		noteId: props.noteId,
 		isProvisional: props.isProvisional,
@@ -65,8 +64,6 @@ function NoteEditor(props: NoteTextProps) {
 
 	const formNoteRef = useRef<FormNote>();
 	formNoteRef.current = { ...formNote };
-
-	const { resourceInfos } = useResourceInfos({ noteBody: formNote.body, contentKey: formNote.id });
 
 	const {
 		localSearch,

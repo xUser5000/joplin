@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FormNote, defaultFormNote } from './types';
+import { clearResourceCache, attachedResources } from './resourceHandling';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
 import AsyncActionQueue from '../../../lib/AsyncActionQueue';
@@ -8,6 +9,8 @@ const usePrevious = require('lib/hooks/usePrevious').default;
 const Note = require('lib/models/Note');
 const Setting = require('lib/models/Setting');
 const { reg } = require('lib/registry.js');
+const ResourceFetcher = require('lib/services/ResourceFetcher.js');
+const DecryptionWorker = require('lib/services/DecryptionWorker.js');
 
 export interface OnLoadEvent {
 	formNote: FormNote,
@@ -23,15 +26,30 @@ interface HookDependencies {
 	onAfterLoad(event:OnLoadEvent):void,
 }
 
+function installResourceChangeHandler(refreshResourceHandler: Function) {
+	ResourceFetcher.instance().on('downloadComplete', refreshResourceHandler);
+	ResourceFetcher.instance().on('downloadStarted', refreshResourceHandler);
+	DecryptionWorker.instance().on('resourceDecrypted', refreshResourceHandler);
+}
+
+function uninstallResourceChangeHandler(refreshResourceHandler: Function) {
+	ResourceFetcher.instance().off('downloadComplete', refreshResourceHandler);
+	ResourceFetcher.instance().off('downloadStarted', refreshResourceHandler);
+	DecryptionWorker.instance().off('resourceDecrypted', refreshResourceHandler);
+}
+
 export default function useFormNote(dependencies:HookDependencies) {
 	const { syncStarted, noteId, isProvisional, titleInputRef, editorRef, onBeforeLoad, onAfterLoad } = dependencies;
 
 	const [formNote, setFormNote] = useState<FormNote>(defaultFormNote());
 	const [isNewNote, setIsNewNote] = useState(false);
 	const prevSyncStarted = usePrevious(syncStarted);
+	const previousNoteId = usePrevious(formNote.id);
+	const [resourceInfos, setResourceInfos] = useState<any>({});
 
 	async function initNoteState(n: any) {
 		let originalCss = '';
+
 		if (n.markup_language === MarkupToHtml.MARKUP_LANGUAGE_HTML) {
 			const htmlToHtml = new HtmlToHtml();
 			const splitted = htmlToHtml.splitHtml(n.body);
@@ -54,6 +72,11 @@ export default function useFormNote(dependencies:HookDependencies) {
 			encryption_applied: n.encryption_applied,
 		};
 
+		// Note that for performance reason,the call to setResourceInfos should
+		// be first because it loads the resource infos in an async way. If we
+		// swap them, the formNote will be updated first and rendered, then the
+		// the resources will load, and the note will be re-rendered.
+		setResourceInfos(await attachedResources(n.body));
 		setFormNote(newFormNote);
 
 		await handleResourceDownloadMode(n.body);
@@ -146,5 +169,26 @@ export default function useFormNote(dependencies:HookDependencies) {
 		};
 	}, [noteId, isProvisional, formNote]);
 
-	return { isNewNote, formNote, setFormNote };
+	const refreshResource = useCallback(async function(event:any = null) {
+		const resourceIds = await Note.linkedResourceIds(formNote.body);
+		if (!event || resourceIds.indexOf(event.id) >= 0) {
+			clearResourceCache();
+			setResourceInfos(await attachedResources(formNote.body));
+		}
+	}, [formNote.body]);
+
+	useEffect(() => {
+		installResourceChangeHandler(refreshResource);
+		return () => {
+			uninstallResourceChangeHandler(refreshResource);
+		};
+	}, [refreshResource]);
+
+	useEffect(() => {
+		if (previousNoteId !== formNote.id) {
+			refreshResource();
+		}
+	}, [previousNoteId, formNote.id, refreshResource]);
+
+	return { isNewNote, formNote, setFormNote, resourceInfos };
 }

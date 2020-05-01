@@ -800,11 +800,13 @@ const TinyMCE = (props:TinyMCEProps, ref:any) => {
 		};
 	}, []);
 
+	// Currently we don't handle resource "auto" and "manual" mode with TinyMCE
+	// as it is quite complex and probably rarely used.
 	function renderDisabledOverlay() {
 		const status = resourcesStatus(props.resourceInfos);
 		if (status === 'ready') return null;
 
-		const message = _('Please wait for all attachments to be downloaded and decrypted. You may also switch the layout and edit the note in Markdown mode.');
+		const message = _('Please wait for all attachments to be downloaded and decrypted. You may also switch to %s to edit the note.', _('Code View'));
 		return (
 			<div style={styles.disabledOverlay}>
 				<p style={theme.textStyle}>{message}</p>
