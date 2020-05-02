@@ -173,13 +173,13 @@ module.exports = function(webpackEnv) {
       // There will be one main bundle, and one file per asynchronous chunk.
       // In development, it does not produce real files.
       filename: isEnvProduction
-        ? 'static/js/[name].js'
+        ? 'static/js/[name].[contenthash:8].js'
         : isEnvDevelopment && 'static/js/bundle.js',
       // TODO: remove this when upgrading to webpack 5
       futureEmitAssets: true,
       // There are also additional JS chunk files if you use code splitting.
       chunkFilename: isEnvProduction
-        ? 'static/js/[name].chunk.js'
+        ? 'static/js/[name].[contenthash:8].chunk.js'
         : isEnvDevelopment && 'static/js/[name].chunk.js',
       // We inferred the "public path" (such as / or /my-project) from homepage.
       // We use "/" in development.
@@ -329,15 +329,11 @@ module.exports = function(webpackEnv) {
       rules: [
         // Disable require.ensure as it's not a standard language feature.
         { parser: { requireEnsure: false } },
+
         // First, run the linter.
         // It's important to do this before Babel processes the JS.
-        // 
-        // JOPLINMOD: cra-build-watch expects the webpack config files to have
-        // keys in a certain order so we can't remove any. However we don't
-        // want their eslint config, so to disable it we make it watch extensions
-        // that don't exist.
         {
-          test: /\.(DISABLEDDISABLED)$/,
+          test: /\.(js|mjs|jsx|ts|tsx)$/,
           enforce: 'pre',
           use: [
             {
@@ -378,7 +374,8 @@ module.exports = function(webpackEnv) {
               options: {
                 customize: require.resolve(
                   'babel-preset-react-app/webpack-overrides'
-                ),                
+                ),
+                
                 plugins: [
                   [
                     require.resolve('babel-plugin-named-asset-import'),
@@ -420,6 +417,7 @@ module.exports = function(webpackEnv) {
                 cacheDirectory: true,
                 // See #6846 for context on why cacheCompression is disabled
                 cacheCompression: false,
+                
                 // Babel sourcemaps are needed for debugging into node_modules
                 // code.  Without the options below, debuggers like VSCode
                 // show incorrect code and set breakpoints on the wrong lines.
@@ -580,8 +578,8 @@ module.exports = function(webpackEnv) {
         new MiniCssExtractPlugin({
           // Options similar to the same options in webpackOptions.output
           // both options are optional
-          filename: 'static/css/[name].css',
-          chunkFilename: 'static/css/[name].chunk.css',
+          filename: 'static/css/[name].[contenthash:8].css',
+          chunkFilename: 'static/css/[name].[contenthash:8].chunk.css',
         }),
       // Generate an asset manifest file with the following content:
       // - "files" key: Mapping of all asset filenames to their corresponding
@@ -615,22 +613,22 @@ module.exports = function(webpackEnv) {
       new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
       // Generate a service worker script that will precache, and keep up to date,
       // the HTML & assets that are part of the Webpack build.
-      // isEnvProduction &&
-   //      new WorkboxWebpackPlugin.GenerateSW({
-   //       clientsClaim: true,
-   //       exclude: [/\.map$/, /asset-manifest\.json$/],
-   //       importWorkboxFrom: 'cdn',
-   //       navigateFallback: `${publicUrl}/index.html`,
-   //       navigateFallbackBlacklist: [
-   //         // Exclude URLs starting with /_, as they're likely an API call
-   //         new RegExp('^/_'),
-   //         // Exclude any URLs whose last part seems to be a file extension
-   //         // as they're likely a resource and not a SPA route.
-   //         // URLs containing a "?" character won't be blacklisted as they're likely
-   //         // a route with query params (e.g. auth callbacks).
-   //         new RegExp('/[^/?]+\\.[^/]+$'),
-   //       ],
-   //      }),
+      isEnvProduction &&
+        new WorkboxWebpackPlugin.GenerateSW({
+          clientsClaim: true,
+          exclude: [/\.map$/, /asset-manifest\.json$/],
+          importWorkboxFrom: 'cdn',
+          navigateFallback: publicUrl + '/index.html',
+          navigateFallbackBlacklist: [
+            // Exclude URLs starting with /_, as they're likely an API call
+            new RegExp('^/_'),
+            // Exclude any URLs whose last part seems to be a file extension
+            // as they're likely a resource and not a SPA route.
+            // URLs containing a "?" character won't be blacklisted as they're likely
+            // a route with query params (e.g. auth callbacks).
+            new RegExp('/[^/?]+\\.[^/]+$'),
+          ],
+        }),
       // TypeScript type checking
       useTypeScript &&
         new ForkTsCheckerWebpackPlugin({
