@@ -202,7 +202,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		return {
 			content: async () => {
 				if (!editorRef.current) return '';
-				return prop_htmlToMarkdownRef.current(editorRef.current.getContent());
+				return prop_htmlToMarkdownRef.current(props.contentMarkupLanguage, editorRef.current.getContent(), props.contentOriginalCss);
 			},
 			setContent: (/* body: string*/) => {
 				console.warn('TinyMCE::setContent - not implemented');
@@ -248,7 +248,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				return true;
 			},
 		};
-	}, [editor]);
+	}, [editor, props.contentMarkupLanguage, props.contentOriginalCss]);
 
 	// -----------------------------------------------------------------------------------------
 	// Load the TinyMCE library. The lib loads additional JS and CSS files on startup

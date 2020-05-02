@@ -43,12 +43,12 @@ function NoteEditor(props: NoteTextProps) {
 	const isMountedRef = useRef(true);
 	const noteSearchBarRef = useRef(null);
 
-	const formNote_beforeLoad = useCallback((event:OnLoadEvent) => {
-		saveNoteIfWillChange(event.formNote);
+	const formNote_beforeLoad = useCallback(async (event:OnLoadEvent) => {
+		await saveNoteIfWillChange(event.formNote);
 		setShowRevisions(false);
 	}, []);
 
-	const formNote_afterLoad = useCallback(() => {
+	const formNote_afterLoad = useCallback(async () => {
 		setTitleHasBeenManuallyChanged(false);
 	}, []);
 

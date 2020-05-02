@@ -144,20 +144,18 @@ export default function useFormNote(dependencies:HookDependencies) {
 		}
 
 		async function loadNote() {
-			// if (formNote.saveActionQueue) await formNote.saveActionQueue.waitForAllDone();
-
 			const n = await Note.load(noteId);
 			if (cancelled) return;
 			if (!n) throw new Error(`Cannot find note with ID: ${noteId}`);
 			reg.logger().debug('Loaded note:', n);
 
-			onBeforeLoad({ formNote });
+			await onBeforeLoad({ formNote });
 
 			const newFormNote = await initNoteState(n);
 
 			setIsNewNote(isProvisional);
 
-			onAfterLoad({ formNote: newFormNote });
+			await onAfterLoad({ formNote: newFormNote });
 
 			handleAutoFocus(!!n.is_todo);
 		}
