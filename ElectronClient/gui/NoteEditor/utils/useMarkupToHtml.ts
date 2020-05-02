@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-// import { attachedResources } from './resourceHandling';
+import { ResourceInfos } from './types';
 const { themeStyle } = require('../../../theme.js');
 const Note = require('lib/models/Note');
 const Setting = require('lib/models/Setting');
@@ -10,10 +10,15 @@ interface HookDependencies {
 	customCss: string,
 }
 
+interface MarkupToHtmlOptions {
+	replaceResourceInternalToExternalLinks?: boolean,
+	resourceInfos?: ResourceInfos,
+}
+
 export default function useMarkupToHtml(dependencies:HookDependencies) {
 	const { themeId, customCss } = dependencies;
 
-	return useCallback(async (markupLanguage: number, md: string, options: any = null): Promise<any> => {
+	return useCallback(async (markupLanguage: number, md: string, options: MarkupToHtmlOptions = null): Promise<any> => {
 		options = {
 			replaceResourceInternalToExternalLinks: false,
 			resourceInfos: {},
@@ -28,7 +33,7 @@ export default function useMarkupToHtml(dependencies:HookDependencies) {
 		if (options.replaceResourceInternalToExternalLinks) {
 			md = await Note.replaceResourceInternalToExternalLinks(md, { useAbsolutePaths: true });
 		} else {
-			resources = options.resourceInfos; // await attachedResources(md);
+			resources = options.resourceInfos;
 		}
 
 		delete options.replaceResourceInternalToExternalLinks;

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { OnChangeEvent, EditorCommand } from '../../utils/types';
+import { OnChangeEvent, EditorCommand, ResourceInfos } from '../../utils/types';
 import { resourcesStatus } from '../../utils/resourceHandling';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
@@ -14,7 +14,7 @@ interface TinyMCEProps {
 	theme: number,
 	content: string,
 	contentMarkupLanguage: number,
-	resourceInfos: any,
+	resourceInfos: ResourceInfos,
 	onChange(event: OnChangeEvent): void,
 	onWillChange(event:any): void,
 	onMessage(event:any): void,

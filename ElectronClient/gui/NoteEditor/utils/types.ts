@@ -89,6 +89,15 @@ export function defaultFormNote():FormNote {
 	};
 }
 
+export interface ResourceInfo {
+	localState: any,
+	item: any,
+}
+
+export interface ResourceInfos {
+	[index:string]: ResourceInfo,
+}
+
 export enum ScrollOptionTypes {
 	None = 0,
 	Hash = 1,

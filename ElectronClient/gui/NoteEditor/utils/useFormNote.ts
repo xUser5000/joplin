@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FormNote, defaultFormNote } from './types';
+import { FormNote, defaultFormNote, ResourceInfos } from './types';
 import { clearResourceCache, attachedResources } from './resourceHandling';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const HtmlToHtml = require('lib/joplin-renderer/HtmlToHtml');
@@ -26,16 +26,16 @@ interface HookDependencies {
 	onAfterLoad(event:OnLoadEvent):void,
 }
 
-function installResourceChangeHandler(refreshResourceHandler: Function) {
-	ResourceFetcher.instance().on('downloadComplete', refreshResourceHandler);
-	ResourceFetcher.instance().on('downloadStarted', refreshResourceHandler);
-	DecryptionWorker.instance().on('resourceDecrypted', refreshResourceHandler);
+function installResourceChangeHandler(onResourceChangeHandler: Function) {
+	ResourceFetcher.instance().on('downloadComplete', onResourceChangeHandler);
+	ResourceFetcher.instance().on('downloadStarted', onResourceChangeHandler);
+	DecryptionWorker.instance().on('resourceDecrypted', onResourceChangeHandler);
 }
 
-function uninstallResourceChangeHandler(refreshResourceHandler: Function) {
-	ResourceFetcher.instance().off('downloadComplete', refreshResourceHandler);
-	ResourceFetcher.instance().off('downloadStarted', refreshResourceHandler);
-	DecryptionWorker.instance().off('resourceDecrypted', refreshResourceHandler);
+function uninstallResourceChangeHandler(onResourceChangeHandler: Function) {
+	ResourceFetcher.instance().off('downloadComplete', onResourceChangeHandler);
+	ResourceFetcher.instance().off('downloadStarted', onResourceChangeHandler);
+	DecryptionWorker.instance().off('resourceDecrypted', onResourceChangeHandler);
 }
 
 export default function useFormNote(dependencies:HookDependencies) {
@@ -45,7 +45,7 @@ export default function useFormNote(dependencies:HookDependencies) {
 	const [isNewNote, setIsNewNote] = useState(false);
 	const prevSyncStarted = usePrevious(syncStarted);
 	const previousNoteId = usePrevious(formNote.id);
-	const [resourceInfos, setResourceInfos] = useState<any>({});
+	const [resourceInfos, setResourceInfos] = useState<ResourceInfos>({});
 
 	async function initNoteState(n: any) {
 		let originalCss = '';
@@ -169,7 +169,7 @@ export default function useFormNote(dependencies:HookDependencies) {
 		};
 	}, [noteId, isProvisional, formNote]);
 
-	const refreshResource = useCallback(async function(event:any = null) {
+	const onResourceChange = useCallback(async function(event:any = null) {
 		const resourceIds = await Note.linkedResourceIds(formNote.body);
 		if (!event || resourceIds.indexOf(event.id) >= 0) {
 			clearResourceCache();
@@ -178,17 +178,33 @@ export default function useFormNote(dependencies:HookDependencies) {
 	}, [formNote.body]);
 
 	useEffect(() => {
-		installResourceChangeHandler(refreshResource);
+		installResourceChangeHandler(onResourceChange);
 		return () => {
-			uninstallResourceChangeHandler(refreshResource);
+			uninstallResourceChangeHandler(onResourceChange);
 		};
-	}, [refreshResource]);
+	}, [onResourceChange]);
 
 	useEffect(() => {
 		if (previousNoteId !== formNote.id) {
-			refreshResource();
+			onResourceChange();
 		}
-	}, [previousNoteId, formNote.id, refreshResource]);
+	}, [previousNoteId, formNote.id, onResourceChange]);
+
+	useEffect(() => {
+		let cancelled = false;
+
+		async function runEffect() {
+			const r = await attachedResources(formNote.body);
+			if (cancelled) return;
+			setResourceInfos(r);
+		}
+
+		runEffect();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [formNote.body]);
 
 	return { isNewNote, formNote, setFormNote, resourceInfos };
 }

@@ -1,4 +1,4 @@
-import { OnChangeEvent } from '../../../utils/types';
+import { OnChangeEvent, ResourceInfos } from '../../../utils/types';
 
 export interface AceEditorProps {
 	style: any;
@@ -20,7 +20,7 @@ export interface AceEditorProps {
 	searchMarkers: any,
 	visiblePanes: string[],
 	keyboardMode: string,
-	resourceInfos: any[],
+	resourceInfos: ResourceInfos,
 }
 
 export interface RenderedBody {
