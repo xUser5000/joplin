@@ -103,7 +103,6 @@ function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	const { resetScroll, setEditorPercentScroll, setViewerPercentScroll, editor_scroll } = useScrollHandler(editor, webviewRef, props.onScroll);
 
 	const aceEditor_change = useCallback((newBody: string) => {
-		// setBody(newBody);
 		props_onChangeRef.current({ changeId: null, content: newBody });
 	}, []);
 

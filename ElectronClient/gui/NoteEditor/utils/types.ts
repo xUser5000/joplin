@@ -33,6 +33,7 @@ export interface NoteBodyEditorProps {
 	content: string,
 	contentKey: string,
 	contentMarkupLanguage: number,
+	contentOriginalCss: string,
 	onChange(event: OnChangeEvent): void;
 	onWillChange(event: any): void;
 	onMessage(event: any): void;

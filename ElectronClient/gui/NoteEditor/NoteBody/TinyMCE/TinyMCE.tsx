@@ -681,8 +681,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			onChangeHandlerIID = setTimeout(async () => {
 				onChangeHandlerIID = null;
 
-				// TODO: Speed up saving time on TextEditor.tsx
-				const contentMd = await prop_htmlToMarkdownRef.current(editor.getContent());
+				const contentMd = await prop_htmlToMarkdownRef.current(props.contentMarkupLanguage, editor.getContent(), props.contentOriginalCss);
 
 				if (!editor) return;
 
@@ -770,7 +769,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				console.warn('Error removing events', error);
 			}
 		};
-	}, [props.onWillChange, props.onChange, editor]);
+	}, [props.onWillChange, props.onChange, props.contentMarkupLanguage, props.contentOriginalCss, editor]);
 
 	// -----------------------------------------------------------------------------------------
 	// Destroy the editor when unmounting
