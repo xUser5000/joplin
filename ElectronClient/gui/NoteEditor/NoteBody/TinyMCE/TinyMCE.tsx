@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { OnChangeEvent, EditorCommand, ResourceInfos } from '../../utils/types';
+import { EditorCommand, NoteBodyEditorProps } from '../../utils/types';
 import { resourcesStatus } from '../../utils/resourceHandling';
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const taboverride = require('taboverride');
@@ -8,22 +8,6 @@ const { reg } = require('lib/registry.js');
 const { _ } = require('lib/locale');
 const BaseItem = require('lib/models/BaseItem');
 const { themeStyle, buildStyle } = require('../../../../theme.js');
-
-interface TinyMCEProps {
-	style: any,
-	theme: number,
-	content: string,
-	contentMarkupLanguage: number,
-	resourceInfos: ResourceInfos,
-	onChange(event: OnChangeEvent): void,
-	onWillChange(event:any): void,
-	onMessage(event:any): void,
-	markupToHtml: Function,
-	htmlToMarkdown: Function,
-	allAssets: Function,
-	attachResources: Function,
-	disabled: boolean,
-}
 
 function markupRenderOptions(override:any = null) {
 	return {
@@ -122,7 +106,7 @@ const joplinCommandToTinyMceCommands:JoplinCommandToTinyMceCommands = {
 	'search': { name: 'SearchReplace' },
 };
 
-function styles_(props:TinyMCEProps) {
+function styles_(props:NoteBodyEditorProps) {
 	return buildStyle('TinyMCE', props.theme, (/* theme:any */) => {
 		return {
 			disabledOverlay: {
@@ -150,7 +134,7 @@ let loadedAssetFiles_:string[] = [];
 let dispatchDidUpdateIID_:any = null;
 let changeId_:number = 1;
 
-const TinyMCE = (props:TinyMCEProps, ref:any) => {
+const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	const [editor, setEditor] = useState(null);
 	const [scriptLoaded, setScriptLoaded] = useState(false);
 	const [editorReady, setEditorReady] = useState(false);

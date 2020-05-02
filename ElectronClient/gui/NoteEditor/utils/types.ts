@@ -26,6 +26,30 @@ export interface NoteTextProps {
 	noteVisiblePanes: string[],
 }
 
+export interface NoteBodyEditorProps {
+	style: any;
+	ref: any,
+	theme: number;
+	content: string,
+	contentKey: string,
+	contentMarkupLanguage: number,
+	onChange(event: OnChangeEvent): void;
+	onWillChange(event: any): void;
+	onMessage(event: any): void;
+	onScroll(event: any): void;
+	markupToHtml: Function;
+	htmlToMarkdown: Function;
+	allAssets: Function;
+	attachResources: Function;
+	disabled: boolean;
+	dispatch: Function;
+	noteToolbar: any;
+	searchMarkers: any,
+	visiblePanes: string[],
+	keyboardMode: string,
+	resourceInfos: ResourceInfos,
+}
+
 export interface FormNote {
 	id: string,
 	title: string,

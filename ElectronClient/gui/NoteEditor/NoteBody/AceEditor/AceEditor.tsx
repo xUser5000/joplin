@@ -2,13 +2,13 @@ import * as React from 'react';
 import { useState, useEffect, useRef, forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
 
 // eslint-disable-next-line no-unused-vars
-import { EditorCommand } from '../../utils/types';
+import { EditorCommand, NoteBodyEditorProps } from '../../utils/types';
 import { commandAttachFileToBody } from '../../utils/resourceHandling';
 import { ScrollOptions, ScrollOptionTypes } from '../../utils/types';
 import { textOffsetToCursorPosition, useScrollHandler, usePrevious, lineLeftSpaces, selectionRangeCurrentLine, selectionRangePreviousLine, currentTextOffset, textOffsetSelection, selectedText, useSelectionRange } from './utils';
 import Toolbar from './Toolbar';
 import styles_ from './styles';
-import { AceEditorProps, RenderedBody, defaultRenderedBody } from './utils/types';
+import { RenderedBody, defaultRenderedBody } from './utils/types';
 
 const AceEditorReact = require('react-ace').default;
 const { bridge } = require('electron').remote.require('./bridge');
@@ -73,7 +73,7 @@ function markupRenderOptions(override: any = null) {
 	return { ...override };
 }
 
-function AceEditor(props: AceEditorProps, ref: any) {
+function AceEditor(props: NoteBodyEditorProps, ref: any) {
 	const styles = styles_(props);
 
 	const [renderedBody, setRenderedBody] = useState<RenderedBody>(defaultRenderedBody()); // Viewer content

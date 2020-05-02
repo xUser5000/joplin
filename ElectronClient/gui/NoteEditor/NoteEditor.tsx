@@ -15,7 +15,7 @@ import useDropHandler from './utils/useDropHandler';
 import useMarkupToHtml from './utils/useMarkupToHtml';
 import useFormNote, { OnLoadEvent } from './utils/useFormNote';
 import styles_ from './styles';
-import { NoteTextProps, FormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent } from './utils/types';
+import { NoteTextProps, FormNote, ScrollOptions, ScrollOptionTypes, OnChangeEvent, NoteBodyEditorProps } from './utils/types';
 import { attachResources } from './utils/resourceHandling';
 
 const { themeStyle } = require('../../theme.js');
@@ -396,7 +396,7 @@ function NoteEditor(props: NoteTextProps) {
 
 	const searchMarkers = useSearchMarkers(showLocalSearch, localSearchMarkerOptions, props.searches, props.selectedSearchId);
 
-	const editorProps = {
+	const editorProps:NoteBodyEditorProps = {
 		ref: editorRef,
 		contentKey: formNote.id,
 		style: styles.tinyMCE,
