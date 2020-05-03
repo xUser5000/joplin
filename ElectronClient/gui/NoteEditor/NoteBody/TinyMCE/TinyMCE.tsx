@@ -205,6 +205,10 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			clearState: () => {
 				console.warn('TinyMCE::clearState - not implemented');
 			},
+			supportsCommand: (name:string) => {
+				// TODO: should also handle commands that are not in this map (insertText, focus, etc);
+				return !!joplinCommandToTinyMceCommands[name];
+			},
 			execCommand: async (cmd:EditorCommand) => {
 				if (!editor) return false;
 
