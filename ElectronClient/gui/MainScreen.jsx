@@ -852,7 +852,6 @@ class MainScreenComponent extends React.Component {
 		const shareNoteDialogOptions = this.state.shareNoteDialogOptions;
 
 		const bodyEditor = this.props.settingEditorCodeView ? 'AceEditor' : 'TinyMCE';
-		const noteTextComp = <NoteEditor bodyEditor={bodyEditor} style={styles.noteText} />;
 
 		return (
 			<div style={style}>
@@ -870,7 +869,7 @@ class MainScreenComponent extends React.Component {
 				<VerticalResizer style={styles.verticalResizer} onDrag={this.sidebar_onDrag} />
 				<NoteList style={styles.noteList} />
 				<VerticalResizer style={styles.verticalResizer} onDrag={this.noteList_onDrag} />
-				{noteTextComp}
+				<NoteEditor bodyEditor={bodyEditor} style={styles.noteText} />
 				{pluginDialog}
 			</div>
 		);
