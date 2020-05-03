@@ -145,6 +145,8 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 	const markupToHtml = useRef(null);
 	markupToHtml.current = props.markupToHtml;
 
+	const lastOnChangeEventContent = useRef<string>('');
+
 	const rootIdRef = useRef<string>(`tinymce-${Date.now()}${Math.round(Math.random() * 10000)}`);
 	const editorRef = useRef<any>(null);
 	editorRef.current = editor;
@@ -627,9 +629,12 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 		let cancelled = false;
 
 		const loadContent = async () => {
+			if (lastOnChangeEventContent.current === props.content) return;
+
 			const result = await props.markupToHtml(props.contentMarkupLanguage, props.content, markupRenderOptions({ resourceInfos: props.resourceInfos }));
 			if (cancelled) return;
 
+			lastOnChangeEventContent.current = props.content;
 			editor.setContent(result.html);
 
 			await loadDocumentAssets(editor, await props.allAssets(props.contentMarkupLanguage));
@@ -652,7 +657,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			cancelled = true;
 			editor.getDoc().removeEventListener('click', onEditorContentClick);
 		};
-	}, [editor, props.markupToHtml, props.allAssets, onEditorContentClick, props.resourceInfos]);
+	}, [editor, props.markupToHtml, props.allAssets, onEditorContentClick, props.content, props.resourceInfos]);
 
 	// -----------------------------------------------------------------------------------------
 	// Handle onChange event
@@ -684,6 +689,8 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 				const contentMd = await prop_htmlToMarkdownRef.current(props.contentMarkupLanguage, editor.getContent(), props.contentOriginalCss);
 
 				if (!editor) return;
+
+				lastOnChangeEventContent.current = contentMd;
 
 				props_onChangeRef.current({
 					changeId: changeId,
