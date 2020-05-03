@@ -270,7 +270,7 @@ function NoteEditor(props: NoteTextProps) {
 		});
 	}, [formNote, handleProvisionalFlag]);
 
-	const onMessage = useMessageHandler(scrollWhenReady, setScrollWhenReady, editorRef, setLocalSearchResultCount, props.dispatch);
+	const onMessage = useMessageHandler(scrollWhenReady, setScrollWhenReady, editorRef, setLocalSearchResultCount, props.dispatch, formNote);
 
 	const introductionPostLinkClick = useCallback(() => {
 		bridge().openExternal('https://www.patreon.com/posts/34246624');
@@ -381,17 +381,13 @@ function NoteEditor(props: NoteTextProps) {
 
 	function renderNoteToolbar() {
 		const toolbarStyle = {
-			// marginTop: 4,
 			marginBottom: 0,
-			// flex: 1,
 		};
 
 		return <NoteToolbar
 			theme={props.theme}
 			note={formNote}
-			dispatch={props.dispatch}
 			style={toolbarStyle}
-			watchedNoteFiles={props.watchedNoteFiles}
 			onButtonClick={noteToolbar_buttonClick}
 		/>;
 	}
