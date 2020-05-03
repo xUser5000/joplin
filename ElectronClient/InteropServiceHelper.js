@@ -69,7 +69,10 @@ class InteropServiceHelper {
 								cleanup();
 							}
 						} else {
-							// TODO: it is crashing at this point
+							// TODO: it is crashing at this point :(
+							// Appears to be a Chromium bug: https://github.com/electron/electron/issues/19946
+							// Maybe can be fixed by doing everything from main process?
+							// i.e. creating a function `print()` that takes the `htmlFile` variable as input.
 
 							win.webContents.print(options, (success, reason) => {
 								// TODO: This is correct but broken in Electron 4. Need to upgrade to 5+
