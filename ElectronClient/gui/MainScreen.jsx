@@ -535,7 +535,7 @@ class MainScreenComponent extends React.Component {
 			if (noteIds.length === 1) {
 				path = bridge().showSaveDialog({
 					filters: [{ name: _('PDF File'), extensions: ['pdf'] }],
-					defaultPath: await InteropServiceHelper.defaultFilename(noteIds, 'pdf'),
+					defaultPath: await InteropServiceHelper.defaultFilename(noteIds[0], 'pdf'),
 				});
 
 			} else {
@@ -548,14 +548,20 @@ class MainScreenComponent extends React.Component {
 
 			for (let i = 0; i < noteIds.length; i++) {
 				const note = await Note.load(noteIds[i]);
-				const folder = Folder.byId(this.props.folders, note.parent_id);
 
-				const pdfPath = (noteIds.length === 1) ? path :
-					await shim.fsDriver().findUniqueFilename(`${path}/${this.pdfFileName_(note, folder)}`);
+				let pdfPath = '';
+
+				if (noteIds.length === 1) {
+					pdfPath = path;
+				} else {
+					const n = await InteropServiceHelper.defaultFilename(note.id, 'pdf');
+					pdfPath = await shim.fsDriver().findUniqueFilename(`${path}/${n}`);
+				}
 
 				await this.printTo_('pdf', { path: pdfPath, noteId: note.id });
 			}
 		} catch (error) {
+			console.error(error);
 			bridge().showErrorMessageBox(error.message);
 		}
 	}
