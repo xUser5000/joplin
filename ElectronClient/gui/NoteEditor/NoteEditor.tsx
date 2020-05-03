@@ -34,6 +34,8 @@ const NoteRevisionViewer = require('../NoteRevisionViewer.min');
 const TagList = require('../TagList.min.js');
 
 function NoteEditor(props: NoteTextProps) {
+	const theme = themeStyle(props.theme);
+
 	const [showRevisions, setShowRevisions] = useState(false);
 	const [titleHasBeenManuallyChanged, setTitleHasBeenManuallyChanged] = useState(false);
 	const [scrollWhenReady, setScrollWhenReady] = useState<ScrollOptions>(null);
@@ -381,7 +383,7 @@ function NoteEditor(props: NoteTextProps) {
 		const toolbarStyle = {
 			// marginTop: 4,
 			marginBottom: 0,
-			flex: 1,
+			// flex: 1,
 		};
 
 		return <NoteToolbar
@@ -414,7 +416,7 @@ function NoteEditor(props: NoteTextProps) {
 		disabled: false,
 		theme: props.theme,
 		dispatch: props.dispatch,
-		noteToolbar: renderNoteToolbar(),
+		noteToolbar: null,// renderNoteToolbar(),
 		onScroll: onScroll,
 		searchMarkers: searchMarkers,
 		visiblePanes: props.noteVisiblePanes || ['editor', 'viewer'],
@@ -432,7 +434,7 @@ function NoteEditor(props: NoteTextProps) {
 	}
 
 	const wysiwygBanner = props.bodyEditor !== 'TinyMCE' ? null : (
-		<div style={{ ...styles.warningBanner, marginBottom: 10 }}>
+		<div style={{ ...styles.warningBanner }}>
 			This is an experimental WYSIWYG editor for evaluation only. Please do not use with important notes as you may lose some data! See the <a style={styles.urlColor} onClick={introductionPostLinkClick} href="#">introduction post</a> for more information.
 		</div>
 	);
@@ -511,13 +513,12 @@ function NoteEditor(props: NoteTextProps) {
 	return (
 		<div style={styles.root} onDrop={onDrop}>
 			<div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-				{wysiwygBanner}
 				{tagList}
-				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', paddingBottom: 5, borderBottomWidth: 1, borderBottomColor: theme.dividerColor, borderBottomStyle: 'solid' }}>
+					{renderNoteToolbar()}
 					<input
 						type="text"
 						ref={titleInputRef}
-						// disabled={waitingToSaveNote}
 						placeholder={props.isProvisional ? _('Creating new %s...', formNote.is_todo ? _('to-do') : _('note')) : ''}
 						style={styles.titleInput}
 						onChange={onTitleChange}
@@ -532,6 +533,7 @@ function NoteEditor(props: NoteTextProps) {
 				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
 					{renderSearchBar()}
 				</div>
+				{wysiwygBanner}
 			</div>
 		</div>
 	);

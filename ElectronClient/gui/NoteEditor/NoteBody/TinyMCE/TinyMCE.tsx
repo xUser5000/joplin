@@ -172,15 +172,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 		if (nodeName === 'A' && (event.ctrlKey || event.metaKey)) {
 			const href = event.target.getAttribute('href');
-			// const joplinUrl = href.indexOf('joplin://') === 0 ? href : null;
 
-			// if (joplinUrl) {
-			// 	props.onMessage({
-			// 		name: 'openInternal',
-			// 		args: {
-			// 			url: joplinUrl,
-			// 		},
-			// 	});
 			if (href.indexOf('#') === 0) {
 				const anchorName = href.substr(1);
 				const anchor = editor.getDoc().getElementById(anchorName);
@@ -190,12 +182,7 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 					reg.logger().warn('TinyMce: could not find anchor with ID ', anchorName);
 				}
 			} else {
-				props.onMessage({
-					name: 'openUrl',
-					args: {
-						url: href,
-					},
-				});
+				props.onMessage({ channel: href });
 			}
 		}
 	}, [editor, props.onMessage]);
@@ -399,6 +386,10 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 			.tox.tox-tinymce-aux .tox-toolbar__overflow,
 			.tox .tox-dialog__footer {
 				border-color: ${theme.dividerColor} !important;
+			}
+
+			.tox-tinymce {
+				border-top: none !important;
 			}
 		`));
 
@@ -639,8 +630,6 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 			await loadDocumentAssets(editor, await props.allAssets(props.contentMarkupLanguage));
 
-			editor.getDoc().addEventListener('click', onEditorContentClick);
-
 			// Need to clear UndoManager to avoid this problem:
 			// - Load note 1
 			// - Make a change
@@ -655,9 +644,17 @@ const TinyMCE = (props:NoteBodyEditorProps, ref:any) => {
 
 		return () => {
 			cancelled = true;
+		};
+	}, [editor, props.markupToHtml, props.allAssets, props.content, props.resourceInfos]);
+
+	useEffect(() => {
+		if (!editor) return () => {};
+
+		editor.getDoc().addEventListener('click', onEditorContentClick);
+		return () => {
 			editor.getDoc().removeEventListener('click', onEditorContentClick);
 		};
-	}, [editor, props.markupToHtml, props.allAssets, onEditorContentClick, props.content, props.resourceInfos]);
+	}, [editor, onEditorContentClick]);
 
 	// -----------------------------------------------------------------------------------------
 	// Handle onChange event

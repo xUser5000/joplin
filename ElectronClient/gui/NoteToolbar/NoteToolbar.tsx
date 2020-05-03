@@ -31,7 +31,7 @@ function styles_(props:NoteToolbarProps) {
 		return {
 			root: {
 				...props.style,
-
+				borderBottom: 'none',
 			},
 		};
 	});
