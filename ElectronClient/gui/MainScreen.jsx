@@ -52,6 +52,30 @@ class MainScreenComponent extends React.Component {
 		this.noteList_onDrag = this.noteList_onDrag.bind(this);
 		this.commandSavePdf = this.commandSavePdf.bind(this);
 		this.commandPrint = this.commandPrint.bind(this);
+
+
+
+		setTimeout(() => {
+			const Jasmine = require('jasmine');
+			const jasmine = new Jasmine();
+			jasmine.loadConfigFile(`${__dirname}/../tests/support/jasmine.json`);
+			jasmine.configureDefaultReporter({
+				print: (args) => {
+					const s = args.trim();
+					if (!s) return;
+					console.info(s);
+				},
+				showColors: false,
+			});
+			jasmine.onComplete(function(passed) {
+				if (passed) {
+					console.log('All specs have passed');
+				} else {
+					console.log('At least one spec has failed');
+				}
+			});
+			jasmine.execute();
+		}, 2000);
 	}
 
 	setupAppCloseHandling() {
