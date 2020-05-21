@@ -41,7 +41,7 @@ Building the apps is relatively easy - please [see the build instructions](https
 
 ## Coding style
 
-Coding style is enforced by a pre-commit hook that runs eslint. This hook is installed whenever running `npm install` on any of the application directory. If for some reason the pre-commit hook didn't get installed, you can manually install it by running `npm install` at the root of the repository.
+Coding style is enforced by a pre-commit hook that runs eslint. This hook is installed whenever running `yarn install` on any of the application directory. If for some reason the pre-commit hook didn't get installed, you can manually install it by running `yarn install` at the root of the repository.
 
 For new React components, please use [React Hooks](https://reactjs.org/docs/hooks-intro.html). For new code in general, please use TypeScript (unless you are modifying a file that was originally in JavaScript).
 
@@ -58,26 +58,26 @@ When submitting a pull request for a new feature or bug fixes, please add automa
 The tests are under CliClient/tests. To get them running, you first need to build the CLI app:
 
 ```sh
-npm install
+yarn install
 cd CliClient
 ```
 
 To run all the test units:
 
 ```sh
-npm test
+yarn test
 ```
 
 To run just one particular file:
 
 ```sh
-npm test -- --filter=markdownUtils # Don't add the .js extension
+yarn test -- --filter=markdownUtils # Don't add the .js extension
 ```
 
 To filter tests. For example, to run all the test units that contain "should handle conflict" in their description:
 
 ```sh
-npm test -- --filter="should handle conflict"
+yarn test -- --filter="should handle conflict"
 ```
 
 ## About abandoned pull requests

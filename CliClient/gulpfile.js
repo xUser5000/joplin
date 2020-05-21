@@ -15,7 +15,7 @@ tasks.build = {
 		await utils.copyDir(`${__dirname}/../patches`, `${buildDir}/patches`);
 		await tasks.copyLib.fn();
 		await utils.copyFile(`${__dirname}/package.json`, `${buildDir}/package.json`);
-		await utils.copyFile(`${__dirname}/package-lock.json`, `${buildDir}/package-lock.json`);
+		await utils.copyFile(`${__dirname}/yarn.lock`, `${buildDir}/yarn.lock`);
 		await utils.copyFile(`${__dirname}/gulpfile.js`, `${buildDir}/gulpfile.js`);
 
 		const packageRaw = await fs.readFile(`${buildDir}/package.json`);

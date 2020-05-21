@@ -13,19 +13,19 @@ Note that all the applications share the same library, which, for historical rea
 
 Before doing anything else, from the root of the project, run:
 
-	npm install
+	yarn install
 
 Then you can test the various applications:
 
 ## Testing the desktop application
 
 	cd ElectronClient
-	npm start
+	yarn start
 
 ## Testing the Terminal application
 
 	cd CliClient
-	npm start
+	yarn start
 
 ## Testing the Mobile application
 
@@ -34,18 +34,18 @@ First you need to setup React Native to build projects with native code. For thi
 Then:
 
 	cd ReactNativeClient
-	npm run start-android
-	# Or: npm run start-ios
+	yarn run start-android
+	# Or: yarn run start-ios
 
 To run the iOS application, it might be easier to open the file `ios/Joplin.xcworkspace` on XCode and run the app from there.
 
-Normally the bundler should start automatically with the application. If it doesn't, run `npm start`.
+Normally the bundler should start automatically with the application. If it doesn't, run `yarn start`.
 
 ## Building the clipper
 
 	cd Clipper/popup
-	npm install
-	npm run watch # To watch for changes
+	yarn install
+	yarn run watch # To watch for changes
 
 To test the extension please refer to the relevant pages for each browser: [Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Your_first_WebExtension#Trying_it_out) / [Chrome](https://developer.chrome.com/extensions/faq#faq-dev-01). Please note that the extension in dev mode will only connect to a dev instance of the desktop app (and vice-versa).
 
@@ -53,15 +53,15 @@ To test the extension please refer to the relevant pages for each browser: [Fire
 
 To make changes to the application, you'll need to rebuild any TypeScript file you've changed, and rebuild the lib. The simplest way to do all this is to watch for changes from the root of the project. Simply run this command, and it should take care of the rest:
 
-	npm run watch
+	yarn run watch
 
-Running `npm run build` would have the same effect, but without watching.
+Running `yarn run build` would have the same effect, but without watching.
 
 ## Running an application with additional parameters
 
-You can specify additional parameters when running the desktop or CLI application. To do so, add `--` to the `npm start` command, followed by your flags. For example:
+You can specify additional parameters when running the desktop or CLI application. To do so, add `--` to the `yarn start` command, followed by your flags. For example:
 
-	npm start -- --profile ~/MyTestProfile
+	yarn start -- --profile ~/MyTestProfile
 
 ## TypeScript
 
@@ -73,14 +73,14 @@ If you'd like to auto-reload the desktop app on changes rather than having to qu
 
 ```sh
 cd ElectronClient
-watchman-make -p '**/*.js' '**/*.jsx' --run "npm start"
+watchman-make -p '**/*.js' '**/*.jsx' --run "yarn start"
 ```
 
-It still requires you to quit the application each time you want it to rebuild, but at least you don't have to re-run `"npm start"` each time. Here's what the workflow loop looks like in practice:
+It still requires you to quit the application each time you want it to rebuild, but at least you don't have to re-run `"yarn start"` each time. Here's what the workflow loop looks like in practice:
 
 1. Edit and save files in your text editor.
 2. Switch to the Electron app and <kbd>cmd</kbd>+<kbd>Q</kbd> to quit it.
-3. `watchman` immediately restarts the app for you (whereas usually you'd have to switch back to the terminal, type `"npm start"`, and hit enter).
+3. `watchman` immediately restarts the app for you (whereas usually you'd have to switch back to the terminal, type `"yarn start"`, and hit enter).
 
 # Troubleshooting
 

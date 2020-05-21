@@ -27,7 +27,7 @@ const buildSeries = [
 	'copyLib',
 ];
 
-// On Windows also run tsc because `npm run watch` locks some folders
+// On Windows also run tsc because `yarn run watch` locks some folders
 // which makes the copyPluginAssets command fail. For that reason,
 // it's not possible to run watch on Windows while testing the desktop app.
 if (require('os').platform() === 'win32') {

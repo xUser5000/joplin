@@ -8,7 +8,7 @@
     "start": "node node_modules/react-native/local-cli/cli.js start --reset-cache",
     "start-ios": "react-native run-ios",
     "start-android": "react-native run-android",
-    "postinstall": "patch-package --patch-dir ../patches && jetify && npm run build",
+    "postinstall": "patch-package --patch-dir ../patches && jetify && yarn run build",
     "build": "gulp build",
     "log-ios": "react-native-log-ios \"Joplin\"",
     "log-android": "adb logcat *:S ReactNative:V ReactNativeJS:V"

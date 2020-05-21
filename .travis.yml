@@ -56,9 +56,9 @@ before_install:
 script:
   - |
     # Install tools
-    npm install
+    yarn install
     cd Tools
-    npm install
+    yarn install
     cd ..
 
     # Run test units.
@@ -66,7 +66,7 @@ script:
     # and that would break the desktop release.
     if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
       cd CliClient
-      npm run test
+      yarn run test
       testResult=$?
       if [ $testResult -ne 0 ]; then
         exit $testResult
@@ -77,7 +77,7 @@ script:
     # Run linter for pull requests only - this is so that
     # bypassing eslint is allowed for urgent fixes.
     if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-      npm run linter-ci ./
+      yarn run linter-ci ./
       testResult=$?
       if [ $testResult -ne 0 ]; then
         exit $testResult

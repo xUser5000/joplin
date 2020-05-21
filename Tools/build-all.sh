@@ -7,7 +7,7 @@ echo "---------------------------------------------------"
 echo "Rebuild API doc..."
 echo "---------------------------------------------------"
 cd "$ROOT_DIR/../CliClient"
-API_DOC="$(npm run --silent start -- apidoc)"
+API_DOC="$(yarn run --silent start -- apidoc)"
 echo "$API_DOC" > "$ROOT_DIR/../readme/api.md"
 cd "$ROOT_DIR"
 

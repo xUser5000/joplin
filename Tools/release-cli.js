@@ -52,19 +52,19 @@ async function insertChangelog(tag, changelog) {
 async function main() {
 	process.chdir(appDir);
 
-	const newVersion = await execCommand('npm version patch');
+	const newVersion = await execCommand('yarn version patch');
 	console.info(`Building ${newVersion}...`);
 	const newTag = `cli-${newVersion}`;
 
 	await execCommand('git pull');
 	await execCommand('touch app/main.js');
-	await execCommand('npm run build');
+	await execCommand('yarn run build');
 	// await execCommand('cp package.json build/');
 	await execCommand('cp ../README.md build/');
 
 	process.chdir(`${appDir}/build`);
 
-	await execCommand('npm publish');
+	await execCommand('yarn publish');
 
 	const changelog = await execCommand(`node ${rootDir}/Tools/git-changelog ${newTag}`);
 

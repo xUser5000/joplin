@@ -13,7 +13,7 @@ install:
   - yarn
 
 build_script:
-  - npm install
+  - yarn install
   - ps: cd ElectronClient
   - yarn dist
 
