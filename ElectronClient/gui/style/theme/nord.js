@@ -70,14 +70,10 @@ const nordStyle = {
 
 	warningBackgroundColor: nord[13],
 
-	htmlColor: nord[4],
-	htmlBackgroundColor: nord[1],
-	htmlDividerColor: nord[2],
-	htmlLinkColor: nord[10],
-	htmlTableBackgroundColor: nord[0],
-	htmlCodeBackgroundColor: nord[0],
-	htmlCodeBorderColor: nord[2],
-	htmlCodeColor: nord[13],
+	tableBackgroundColor: nord[0],
+	codeBackgroundColor: nord[0],
+	codeBorderColor: nord[2],
+	codeColor: nord[13],
 
 	aceEditorTheme: 'terminal',
 	codeMirrorTheme: 'nord',

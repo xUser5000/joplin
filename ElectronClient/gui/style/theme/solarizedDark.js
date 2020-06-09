@@ -24,14 +24,10 @@ const solarizedDarkStyle = {
 
 	warningBackgroundColor: '#b5890055',
 
-	htmlColor: '#93a1a1',
-	htmlBackgroundColor: '#002b36',
-	htmlDividerColor: '#073642',
-	htmlLinkColor: '#268bd2',
-	htmlTableBackgroundColor: '#002b36',
-	htmlCodeBackgroundColor: '#002b36',
-	htmlCodeBorderColor: '#696969',
-	htmlCodeColor: '#fdf6e3',
+	tableBackgroundColor: '#002b36',
+	codeBackgroundColor: '#002b36',
+	codeBorderColor: '#696969',
+	codeColor: '#fdf6e3',
 
 	aceEditorTheme: 'twilight',
 	codeMirrorTheme: 'solarized dark',

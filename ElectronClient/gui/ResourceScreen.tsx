@@ -53,7 +53,7 @@ const ResourceTable: React.FC<ResourceTable> = (props: ResourceTable) => {
 	const sortOrderEngagedMarker = (s: SortingOrder) => {
 		return (
 			<a href="#"
-				style={{ color: props.theme.htmlLinkColor }}
+				style={{ color: props.theme.urlColor }}
 				onClick={() => props.onToggleSorting(s)}>{
 					(props.sorting.order === s && props.sorting.type === 'desc') ? '▾' : '▴'}</a>
 		);
@@ -97,7 +97,7 @@ const ResourceTable: React.FC<ResourceTable> = (props: ResourceTable) => {
 					<tr key={index}>
 						<td style={titleCellStyle} className="titleCell">
 							<a
-								style={{ color: props.theme.htmlLinkColor }}
+								style={{ color: props.theme.urlColor }}
 								href="#"
 								onClick={() => props.onResourceClick(resource)}>{resource.title || `(${_('Untitled')})`}
 							</a>

@@ -22,14 +22,10 @@ const solarizedLightStyle = {
 
 	warningBackgroundColor: '#b5890055',
 
-	htmlColor: '#657b83',
-	htmlBackgroundColor: '#fdf6e3',
-	htmlDividerColor: '#eee8d5',
-	htmlLinkColor: '#268bd2',
-	htmlTableBackgroundColor: '#fdf6e3',
-	htmlCodeBackgroundColor: '#fdf6e3',
-	htmlCodeBorderColor: '#eee8d5',
-	htmlCodeColor: '#002b36',
+	tableBackgroundColor: '#fdf6e3',
+	codeBackgroundColor: '#fdf6e3',
+	codeBorderColor: '#eee8d5',
+	codeColor: '#002b36',
 
 	aceEditorTheme: 'tomorrow',
 	codeMirrorTheme: 'solarized light',

@@ -24,14 +24,10 @@ const darkStyle = {
 
 	warningBackgroundColor: '#CC6600',
 
-	htmlColor: 'rgb(220,220,220)',
-	htmlBackgroundColor: 'rgb(29,32,36)',
-	htmlDividerColor: '#3D444E',
-	htmlCodeColor: '#ffffff',
-	htmlLinkColor: 'rgb(166,166,255)',
-	htmlTableBackgroundColor: 'rgb(40, 41, 42)',
-	htmlCodeBackgroundColor: 'rgb(47, 48, 49)',
-	htmlCodeBorderColor: 'rgb(70, 70, 70)',
+	codeColor: '#ffffff',
+	tableBackgroundColor: 'rgb(40, 41, 42)',
+	codeBackgroundColor: 'rgb(47, 48, 49)',
+	codeBorderColor: 'rgb(70, 70, 70)',
 
 	aceEditorTheme: 'twilight',
 	codeMirrorTheme: 'material-darker',

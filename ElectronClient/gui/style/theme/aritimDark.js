@@ -24,15 +24,10 @@ const aritimStyle = {
 
 	warningBackgroundColor: '#9a2f2f', // Info / Warning boxes bg color
 
-	// Markdown rendered
-	htmlColor: '#d3dae3', // Text color
-	htmlBackgroundColor: '#10151a', // BG Color
-	htmlDividerColor: '#d3dae3', // Lines e.g. ---
-	htmlLinkColor: '#356693', // Normal links
-	htmlTableBackgroundColor: '#141a21', // Table (even) background color
-	htmlCodeBackgroundColor: '#141a21', // Single line code bg
-	htmlCodeBorderColor: '#141a21', // Single line code border, and tables
-	htmlCodeColor: '#005b47', // Single line code text
+	tableBackgroundColor: '#141a21', // Table (even) background color
+	codeBackgroundColor: '#141a21', // Single line code bg
+	codeBorderColor: '#141a21', // Single line code border, and tables
+	codeColor: '#005b47', // Single line code text
 
 	aceEditorTheme: 'chaos',
 	codeMirrorTheme: 'monokai',

@@ -25,12 +25,10 @@ const globalStyle = {
 	buttonMinHeight: 30,
 	editorFontSize: 12,
 	textAreaLineHeight: 17,
-
+	lineHeight: '1.6em',
 	headerHeight: 35,
 	headerButtonHPadding: 6,
-
 	toolbarHeight: 35,
-
 	appearance: 'light',
 };
 
@@ -38,7 +36,6 @@ globalStyle.marginRight = globalStyle.margin;
 globalStyle.marginLeft = globalStyle.margin;
 globalStyle.marginTop = globalStyle.margin;
 globalStyle.marginBottom = globalStyle.margin;
-globalStyle.htmlMarginLeft = `${((globalStyle.marginLeft / 10) * 0.6).toFixed(2)}em`;
 
 globalStyle.icon = {
 	fontSize: 30,
@@ -251,12 +248,6 @@ function themeStyle(theme) {
 		fontSize: Math.round(globalStyle.fontSize * zoomRatio),
 		editorFontSize: editorFontSize,
 		textAreaLineHeight: Math.round(globalStyle.textAreaLineHeight * editorFontSize / 12),
-
-		// For WebView - must correspond to the properties above
-		htmlFontSize: `${Math.round(15 * zoomRatio)}px`,
-		htmlLineHeight: '1.6em', // Math.round(20 * zoomRatio) + 'px'
-
-		htmlCodeFontSize: '.9em',
 	};
 
 	let output = {};

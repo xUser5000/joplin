@@ -20,6 +20,8 @@ const globalStyle = {
 	colorUrl: '#7B81FF',
 	textSelectionColor: '#0096FF',
 	appearance: 'light',
+	urlColor: 'rgb(80,130,190)',
+	codeColor: 'rgb(0,0,0)',
 
 	raisedBackgroundColor: '#0080EF',
 	raisedColor: '#003363',
@@ -27,17 +29,10 @@ const globalStyle = {
 
 	warningBackgroundColor: '#FFD08D',
 
-	// For WebView - must correspond to the properties above
-	htmlFontSize: '16px',
-	htmlColor: '#222222',
-	htmlBackgroundColor: 'white',
-	htmlDividerColor: 'rgb(230,230,230)',
-	htmlLinkColor: 'rgb(80,130,190)',
-	htmlLineHeight: '1.6em',
+	lineHeight: '1.6em',
 
-	htmlCodeBackgroundColor: 'rgb(243, 243, 243)',
-	htmlCodeBorderColor: 'rgb(220, 220, 220)',
-	htmlCodeColor: 'rgb(0,0,0)',
+	codeBackgroundColor: 'rgb(243, 243, 243)',
+	codeBorderColor: 'rgb(220, 220, 220)',
 
 	codeThemeCss: 'atom-one-light.css',
 };
@@ -46,7 +41,6 @@ globalStyle.marginRight = globalStyle.margin;
 globalStyle.marginLeft = globalStyle.margin;
 globalStyle.marginTop = globalStyle.margin;
 globalStyle.marginBottom = globalStyle.margin;
-globalStyle.htmlMarginLeft = `${((globalStyle.marginLeft / 10) * 0.6).toFixed(2)}em`;
 
 const themeCache_ = {};
 
@@ -123,80 +117,44 @@ function themeStyle(theme) {
 		theme = Setting.THEME_LIGHT;
 	}
 
-	if (themeCache_[theme]) return themeCache_[theme];
+	const cacheKey = [theme].join('-');
+	if (themeCache_[cacheKey]) return themeCache_[cacheKey];
+
+	// if (themeCache_[theme]) return themeCache_[theme];
 
 	const output = Object.assign({}, globalStyle);
 	if (theme == Setting.THEME_LIGHT) {
-		return addExtraStyles(output);
+		// nothing
 	} else if (theme == Setting.THEME_OLED_DARK) {
 		output.backgroundColor = '#000000';
 		output.color = '#dddddd';
 		output.colorFaded = '#777777';
-		output.dividerColor = '#555555';
+		output.dividerColor = '#3D444E';
 		output.strongDividerColor = '#888888';
 		output.selectedColor = '#333333';
 		output.textSelectionColor = '#00AEFF';
 		output.appearance = 'dark';
 		output.headerBackgroundColor = '#2D3136';
+		output.urlColor = 'rgb(166,166,255)';
+		output.codeColor = '#ffffff';
 
 		output.raisedBackgroundColor = '#0F2051';
 		output.raisedColor = '#788BC3';
 		output.raisedHighlightedColor = '#ffffff';
 
-		output.htmlColor = 'rgb(220,220,220)';
-		output.htmlBackgroundColor = 'rgb(0,0,0)';
-		output.htmlLinkColor = 'rgb(166,166,255)';
-
-		output.htmlDividerColor = '#3D444E';
-		output.htmlLinkColor = 'rgb(166,166,255)';
-		output.htmlCodeColor = '#ffffff';
-		output.htmlTableBackgroundColor = 'rgb(0, 0, 0)';
-		output.htmlCodeBackgroundColor = 'rgb(47, 48, 49)';
-		output.htmlCodeBorderColor = 'rgb(70, 70, 70)';
+		output.tableBackgroundColor = 'rgb(0, 0, 0)';
+		output.codeBackgroundColor = 'rgb(47, 48, 49)';
+		output.codeBorderColor = 'rgb(70, 70, 70)';
 
 		output.codeThemeCss = 'atom-one-dark-reasonable.css';
 
 		output.colorUrl = '#7B81FF';
 
 		output.colorBright = 'rgb(220,220,220)';
-
-		themeCache_[theme] = output;
-		return addExtraStyles(themeCache_[theme]);
 	}
 
-	output.backgroundColor = '#1D2024';
-	output.color = '#dddddd';
-	output.colorFaded = '#777777';
-	output.dividerColor = '#555555';
-	output.strongDividerColor = '#888888';
-	output.selectedColor = '#333333';
-	output.textSelectionColor = '#00AEFF';
-	output.appearance = 'dark';
-	output.headerBackgroundColor = '#2D3136';
-
-	output.raisedBackgroundColor = '#0F2051';
-	output.raisedColor = '#788BC3';
-	output.raisedHighlightedColor = '#ffffff';
-
-	output.htmlColor = 'rgb(220,220,220)';
-	output.htmlBackgroundColor = 'rgb(29,32,36)';
-	output.htmlLinkColor = 'rgb(166,166,255)';
-
-	output.htmlDividerColor = '#3D444E';
-	output.htmlLinkColor = 'rgb(166,166,255)';
-	output.htmlCodeColor = '#ffffff';
-	output.htmlTableBackgroundColor = 'rgb(40, 41, 42)';
-	output.htmlCodeBackgroundColor = 'rgb(47, 48, 49)';
-	output.htmlCodeBorderColor = 'rgb(70, 70, 70)';
-
-	output.codeThemeCss = 'atom-one-dark-reasonable.css';
-
-	output.colorUrl = '#7B81FF';
-
-	output.colorBright = 'rgb(220,220,220)';
-
-	themeCache_[theme] = output;
-	return addExtraStyles(themeCache_[theme]);
+	themeCache_[cacheKey] = addExtraStyles(output);
+	return themeCache_[cacheKey];
 }
 
 module.exports = { globalStyle, themeStyle, editorFont };

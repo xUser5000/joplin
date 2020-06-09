@@ -24,14 +24,10 @@ const draculaStyle = {
 
 	warningBackgroundColor: '#ffb86c',
 
-	htmlColor: '#f8f8f2',
-	htmlBackgroundColor: '#282a36',
-	htmlDividerColor: '#f8f8f2',
-	htmlLinkColor: '#8be9fd',
-	htmlTableBackgroundColor: '#6272a4',
-	htmlCodeBackgroundColor: '#44475a',
-	htmlCodeBorderColor: '#f8f8f2',
-	htmlCodeColor: '#50fa7b',
+	tableBackgroundColor: '#6272a4',
+	codeBackgroundColor: '#44475a',
+	codeBorderColor: '#f8f8f2',
+	codeColor: '#50fa7b',
 
 	aceEditorTheme: 'dracula',
 	codeMirrorTheme: 'dracula',

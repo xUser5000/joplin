@@ -23,14 +23,10 @@ const lightStyle = {
 
 	warningBackgroundColor: '#FFD08D',
 
-	htmlColor: '#222222',
-	htmlBackgroundColor: 'white',
-	htmlDividerColor: 'rgb(230,230,230)',
-	htmlLinkColor: 'rgb(80,130,190)',
-	htmlTableBackgroundColor: 'rgb(247, 247, 247)',
-	htmlCodeBackgroundColor: 'rgb(243, 243, 243)',
-	htmlCodeBorderColor: 'rgb(220, 220, 220)',
-	htmlCodeColor: 'rgb(0,0,0)',
+	tableBackgroundColor: 'rgb(247, 247, 247)',
+	codeBackgroundColor: 'rgb(243, 243, 243)',
+	codeBorderColor: 'rgb(220, 220, 220)',
+	codeColor: 'rgb(0,0,0)',
 
 	aceEditorTheme: 'chrome',
 	codeMirrorTheme: 'default',
