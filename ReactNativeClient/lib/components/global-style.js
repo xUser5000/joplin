@@ -3,6 +3,7 @@ const { Platform } = require('react-native');
 
 const globalStyle = {
 	fontSize: 16,
+	noteViewerFontSize: 16,
 	margin: 15, // No text and no interactive component should be within this margin
 	itemMarginTop: 10,
 	itemMarginBottom: 10,

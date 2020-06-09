@@ -14,12 +14,10 @@ const themes = {
 // globalStyle should be used for properties that do not change across themes
 // i.e. should not be used for colors
 const globalStyle = {
-	fontSize: 12,
 	fontFamily: 'sans-serif',
 	margin: 15, // No text and no interactive component should be within this margin
 	itemMarginTop: 10,
 	itemMarginBottom: 10,
-	fontSizeSmaller: 14,
 	disabledOpacity: 0.3,
 	buttonMinWidth: 50,
 	buttonMinHeight: 30,
@@ -245,14 +243,15 @@ function themeStyle(theme) {
 	// and computed here to allow them to respond to settings changes
 	// without the need to restart
 	const fontSizes = {
-		fontSize: Math.round(globalStyle.fontSize * zoomRatio),
+		fontSize: Math.round(12 * zoomRatio),
 		editorFontSize: editorFontSize,
 		textAreaLineHeight: Math.round(globalStyle.textAreaLineHeight * editorFontSize / 12),
 	};
 
+	fontSizes.noteViewerFontSize = Math.round(fontSizes.fontSize * 1.25);
+
 	let output = {};
 	output.zoomRatio = zoomRatio;
-	output.editorFontSize = editorFontSize;
 
 	// All theme are based on the light style, and just override the
 	// relevant properties

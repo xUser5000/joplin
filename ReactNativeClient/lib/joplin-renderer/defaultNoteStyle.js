@@ -1,5 +1,5 @@
 module.exports = {
-	fontSize: 12,
+	fontSize: 15,
 	color: '#222222',
 	lineHeight: '1.6em',
 	backgroundColor: 'white',

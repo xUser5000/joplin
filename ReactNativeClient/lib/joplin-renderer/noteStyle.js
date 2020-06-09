@@ -9,7 +9,6 @@ module.exports = function(theme) {
 	theme = theme ? theme : {};
 
 	const fontFamily = '\'Avenir\', \'Arial\', sans-serif';
-	const fontSize = `${theme.fontSize * 1.25}px`;
 
 	const css =
 		`
@@ -20,7 +19,7 @@ module.exports = function(theme) {
 		b,strong{font-weight:bolder}small{font-size:80%}img{border-style:none}
 
 		body {
-			font-size: ${fontSize};
+			font-size: ${theme.noteViewerFontSize};
 			color: ${theme.color};
 			word-wrap: break-word;
 			line-height: ${theme.lineHeight};
@@ -212,7 +211,7 @@ module.exports = function(theme) {
 		table td, th {
 			text-align: left;
 			padding: .5em 1em .5em 1em;
-			font-size: ${fontSize};
+			font-size: ${theme.noteViewerFontSize};
 			color: ${theme.color};
 			font-family: ${fontFamily};
 		}
