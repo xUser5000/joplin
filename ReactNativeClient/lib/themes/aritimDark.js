@@ -14,7 +14,6 @@ const aritimStyle = {
 	urlColor: '#356693', // Links to external sites (e.g. in settings)
 
 	backgroundColor2: '#141a21', // Notebooks main background
-	depthColor: '#141a21',	// Notebooks background color
 	color2: '#d3dae3', // Notebook sidebar text color
 	selectedColor2: '#10151a', // Selected notebook (or settings icon in settings)
 	colorError2: '#9a2f2f',

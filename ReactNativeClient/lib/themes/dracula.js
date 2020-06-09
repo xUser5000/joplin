@@ -14,7 +14,6 @@ const draculaStyle = {
 	urlColor: '#8be9fd',
 
 	backgroundColor2: '#21222C',
-	depthColor: 'rgb(200, 200, 200, OPACITY)',
 	color2: '#bd93f9',
 	selectedColor2: '#44475a',
 	colorError2: '#ff5555',

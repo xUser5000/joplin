@@ -14,7 +14,6 @@ const darkStyle = {
 	urlColor: '#4E87EE',
 
 	backgroundColor2: '#181A1D',
-	depthColor: 'rgb(200, 200, 200, OPACITY)',
 	color2: '#ffffff',
 	selectedColor2: '#013F74',
 	colorError2: '#ff6c6c',

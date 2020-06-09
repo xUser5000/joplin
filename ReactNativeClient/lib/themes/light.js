@@ -5,7 +5,7 @@ const lightStyle = {
 	backgroundColor: '#ffffff',
 	backgroundColorTransparent: 'rgba(255,255,255,0.9)',
 	oddBackgroundColor: '#dddddd',
-	color: '#222222', // For regular text
+	color: '#555555', // For regular text
 	colorError: 'red',
 	colorWarn: '#9A5B00',
 	colorFaded: '#777777', // For less important text
@@ -15,7 +15,6 @@ const lightStyle = {
 	urlColor: '#155BDA',
 
 	backgroundColor2: '#162B3D',
-	depthColor: 'rgb(100, 182, 253, OPACITY)',
 	color2: '#f5f5f5',
 	selectedColor2: '#0269C2',
 	colorError2: '#ff6c6c',
@@ -33,12 +32,6 @@ const lightStyle = {
 	aceEditorTheme: 'chrome',
 	codeMirrorTheme: 'default',
 	codeThemeCss: 'atom-one-light.css',
-
-	// raisedBackgroundColor = '#0F2051'; // BG 2
-	// raisedColor = '#0F2051'; // COLOR 2
-	// raisedHighlightedColor = '#ffffff'; // COLOR BRIGHT 2
-	// textSelectionColor = '#00AEFF';
-
 };
 
 module.exports = lightStyle;
