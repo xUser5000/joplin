@@ -1,8 +1,6 @@
 const Setting = require('lib/models/Setting.js');
 const Color = require('color');
 
-console.info('BBBBBBBBBBBBBBBBBBBBBBBBBB');
-
 const themes = {
 	[Setting.THEME_LIGHT]: require('./themes/light'),
 	[Setting.THEME_DARK]: require('./themes/dark'),
