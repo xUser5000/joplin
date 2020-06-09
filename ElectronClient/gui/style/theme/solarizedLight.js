@@ -1,4 +1,6 @@
 const solarizedLightStyle = {
+	appearance: 'light',
+
 	backgroundColor: '#fdf6e3',
 	backgroundColorTransparent: 'rgba(253, 246, 227, 0.9)',
 	oddBackgroundColor: '#eee8d5',

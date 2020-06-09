@@ -1,5 +1,7 @@
 // This is the default theme in Joplin
 const lightStyle = {
+	appearance: 'light',
+
 	backgroundColor: '#ffffff',
 	backgroundColorTransparent: 'rgba(255,255,255,0.9)',
 	oddBackgroundColor: '#dddddd',
@@ -31,6 +33,12 @@ const lightStyle = {
 	aceEditorTheme: 'chrome',
 	codeMirrorTheme: 'default',
 	codeThemeCss: 'atom-one-light.css',
+
+	// raisedBackgroundColor = '#0F2051'; // BG 2
+	// raisedColor = '#0F2051'; // COLOR 2
+	// raisedHighlightedColor = '#ffffff'; // COLOR BRIGHT 2
+	// textSelectionColor = '#00AEFF';
+
 };
 
 module.exports = lightStyle;

@@ -2,6 +2,7 @@ const Setting = require('lib/models/Setting.js');
 const { Platform } = require('react-native');
 
 const globalStyle = {
+	appearance: 'light',
 	fontSize: 16,
 	noteViewerFontSize: 16,
 	margin: 15, // No text and no interactive component should be within this margin
@@ -14,18 +15,13 @@ const globalStyle = {
 	colorFaded: '#777777', // For less important text
 	fontSizeSmaller: 14,
 	dividerColor: '#dddddd',
-	strongDividerColor: '#aaaaaa',
 	selectedColor: '#e5e5e5',
-	headerBackgroundColor: '#F0F0F0',
 	disabledOpacity: 0.2,
-	colorUrl: '#7B81FF',
-	textSelectionColor: '#0096FF',
-	appearance: 'light',
 	urlColor: 'rgb(80,130,190)',
 	codeColor: 'rgb(0,0,0)',
 
-	raisedBackgroundColor: '#0080EF',
-	raisedColor: '#003363',
+	raisedBackgroundColor: '#162B3D',// '#0080EF',
+	raisedColor: '#f5f5f5',// '#003363',
 	raisedHighlightedColor: '#ffffff',
 
 	warningBackgroundColor: '#FFD08D',
@@ -46,6 +42,14 @@ globalStyle.marginBottom = globalStyle.margin;
 const themeCache_ = {};
 
 function addExtraStyles(style) {
+	if (!style.headerBackgroundColor) {
+		style.headerBackgroundColor = style.appearance === 'light' ? '#F0F0F0' : '#2D3136';
+	}
+
+	if (!style.textSelectionColor) {
+		style.textSelectionColor = style.appearance === 'light' ? '#0096FF' : '#00AEFF';
+	}
+
 	style.icon = {
 		color: style.color,
 		fontSize: 30,
@@ -55,7 +59,7 @@ function addExtraStyles(style) {
 		color: style.color,
 		backgroundColor: style.backgroundColor,
 		borderBottomWidth: 1,
-		borderColor: style.strongDividerColor,
+		borderColor: style.dividerColor,
 		paddingBottom: 0,
 	};
 
@@ -77,7 +81,7 @@ function addExtraStyles(style) {
 	};
 
 	style.urlText = {
-		color: style.colorUrl,
+		color: style.urlColor,
 		fontSize: style.fontSize,
 	};
 
@@ -121,36 +125,44 @@ function themeStyle(theme) {
 	const cacheKey = [theme].join('-');
 	if (themeCache_[cacheKey]) return themeCache_[cacheKey];
 
-	// if (themeCache_[theme]) return themeCache_[theme];
-
 	const output = Object.assign({}, globalStyle);
 	if (theme == Setting.THEME_LIGHT) {
 		// nothing
 	} else if (theme == Setting.THEME_OLED_DARK) {
+		output.appearance = 'dark';
 		output.backgroundColor = '#000000';
 		output.color = '#dddddd';
 		output.colorFaded = '#777777';
 		output.dividerColor = '#3D444E';
-		output.strongDividerColor = '#888888';
 		output.selectedColor = '#333333';
-		output.textSelectionColor = '#00AEFF';
-		output.appearance = 'dark';
-		output.headerBackgroundColor = '#2D3136';
 		output.urlColor = 'rgb(166,166,255)';
 		output.codeColor = '#ffffff';
-
 		output.raisedBackgroundColor = '#0F2051';
 		output.raisedColor = '#788BC3';
 		output.raisedHighlightedColor = '#ffffff';
-
 		output.tableBackgroundColor = 'rgb(0, 0, 0)';
 		output.codeBackgroundColor = 'rgb(47, 48, 49)';
 		output.codeBorderColor = 'rgb(70, 70, 70)';
-
 		output.codeThemeCss = 'atom-one-dark-reasonable.css';
-
-		output.colorUrl = '#7B81FF';
-
+		output.colorBright = 'rgb(220,220,220)';
+	} else if (theme == Setting.THEME_DARK) {
+		output.appearance = 'dark';
+		output.backgroundColor = '#1D2024';
+		output.color = '#dddddd';
+		output.colorFaded = '#777777';
+		output.dividerColor = '#555555';
+		output.selectedColor = '#333333';
+		output.urlColor = '#7B81FF';
+		output.appearance = 'dark';
+		output.headerBackgroundColor = '#2D3136';
+		output.raisedBackgroundColor = '#0F2051';
+		output.raisedColor = '#788BC3';
+		output.raisedHighlightedColor = '#ffffff';
+		output.codeColor = '#ffffff';
+		output.tableBackgroundColor = 'rgb(40, 41, 42)';
+		output.codeBackgroundColor = 'rgb(47, 48, 49)';
+		output.codeBorderColor = 'rgb(70, 70, 70)';
+		output.codeThemeCss = 'atom-one-dark-reasonable.css';
 		output.colorBright = 'rgb(220,220,220)';
 	}
 

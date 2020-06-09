@@ -55,6 +55,7 @@ class Setting extends BaseModel {
 				output[Setting.THEME_SOLARIZED_LIGHT] = _('Solarised Light');
 				output[Setting.THEME_SOLARIZED_DARK] = _('Solarised Dark');
 				output[Setting.THEME_NORD] = _('Nord');
+				output[Setting.THEME_ARITIM_DARK] = _('Aritim Dark');
 			} else {
 				output[Setting.THEME_OLED_DARK] = _('OLED Dark');
 			}
