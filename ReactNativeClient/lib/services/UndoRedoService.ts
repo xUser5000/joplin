@@ -1,8 +1,8 @@
-import AsyncActionQueue from '../AsyncActionQueue';
+import AsyncActionQueue, { IntervalType } from '../AsyncActionQueue';
 
 export default class UndoRedoService {
 
-	private pushAsyncQueue:AsyncActionQueue = new AsyncActionQueue(1000);
+	private pushAsyncQueue:AsyncActionQueue = new AsyncActionQueue(1000, IntervalType.Fixed);
 	private baseState:any = null;
 	private undoStates:any[] = [];
 	private redoStates:any[] = [];
@@ -24,9 +24,9 @@ export default class UndoRedoService {
 		});
 	}
 
-	reset() {
-		this.pushAsyncQueue.reset();
-	}
+	// reset() {
+	// 	this.pushAsyncQueue.reset();
+	// }
 
 	undo() {
 		if (!this.canUndo) throw new Error('Nothing to undo');
