@@ -67,6 +67,16 @@ export default class AsyncActionQueue {
 		this.processing_ = false;
 	}
 
+	async reset() {
+		if (this.scheduleProcessingIID_) {
+			clearTimeout(this.scheduleProcessingIID_);
+			this.scheduleProcessingIID_ = null;
+		}
+
+		this.queue_ = [];
+		return this.waitForAllDone();
+	}
+
 	// Currently waitForAllDone() already finishes all the actions
 	// as quickly as possible so we can make it an alias.
 	async processAllNow() {
