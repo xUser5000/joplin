@@ -77,9 +77,9 @@ class NoteScreenComponent extends BaseScreenComponent {
 				canUndo: false,
 				canRedo: false,
 			},
-		};
 
-		this.selection = null;
+			selection: { start: 0, end: 0 },
+		};
 
 		this.saveActionQueues_ = {};
 
@@ -228,6 +228,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 		this.undoRedoService_stackChange = this.undoRedoService_stackChange.bind(this);
 		this.screenHeader_undoButtonPress = this.screenHeader_undoButtonPress.bind(this);
 		this.screenHeader_redoButtonPress = this.screenHeader_redoButtonPress.bind(this);
+		this.body_selectionChange = this.body_selectionChange.bind(this);
 	}
 
 	undoRedoService_stackChange() {
@@ -244,7 +245,10 @@ class NoteScreenComponent extends BaseScreenComponent {
 		this.setState((state) => {
 			const newNote = Object.assign({}, state.note);
 			newNote.body = undoState.body;
-			return { note: newNote };
+			return {
+				note: newNote,
+				selection: Object.assign({}, undoState.selection),
+			};
 		});
 	}
 
@@ -348,13 +352,11 @@ class NoteScreenComponent extends BaseScreenComponent {
 	undoState(noteBody = null) {
 		return {
 			body: noteBody === null ? this.state.note.body : noteBody,
-			selection: Object.assign({}, this.selection),
+			selection: Object.assign({}, this.state.selection),
 		};
 	}
 
 	async componentDidMount() {
-		this.selection = null;
-
 		BackButtonService.addHandler(this.backHandler);
 		NavService.addHandler(this.navHandler);
 
@@ -419,6 +421,10 @@ class NoteScreenComponent extends BaseScreenComponent {
 		}
 		shared.noteComponent_change(this, 'body', text);
 		this.scheduleSave();
+	}
+
+	body_selectionChange(event) {
+		this.setState({ selection: event.nativeEvent.selection });
 	}
 
 	makeSaveAction() {
@@ -639,9 +645,9 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 		const newNote = Object.assign({}, this.state.note);
 
-		if (this.state.mode == 'edit' && !Setting.value('editor.beta') && !!this.selection) {
-			const prefix = newNote.body.substring(0, this.selection.start);
-			const suffix = newNote.body.substring(this.selection.end);
+		if (this.state.mode == 'edit' && !Setting.value('editor.beta') && !!this.state.selection) {
+			const prefix = newNote.body.substring(0, this.state.selection.start);
+			const suffix = newNote.body.substring(this.state.selection.end);
 			newNote.body = `${prefix}\n${resourceTag}\n${suffix}`;
 		} else {
 			newNote.body += `\n${resourceTag}`;
@@ -1077,9 +1083,8 @@ class NoteScreenComponent extends BaseScreenComponent {
 						multiline={true}
 						value={note.body}
 						onChangeText={(text) => this.body_changeText(text)}
-						onSelectionChange={({ nativeEvent: { selection } }) => {
-							this.selection = selection;
-						}}
+						selection={this.state.selection}
+						onSelectionChange={this.body_selectionChange}
 						blurOnSubmit={false}
 						selectionColor={theme.textSelectionColor}
 						keyboardAppearance={theme.keyboardAppearance}
@@ -1111,7 +1116,7 @@ class NoteScreenComponent extends BaseScreenComponent {
 
 		// Save button is not really needed anymore with the improved save logic
 		const showSaveButton = false; // this.state.mode == 'edit' || this.isModified() || this.saveButtonHasBeenShown_;
-		const saveButtonDisabled = !this.isModified();
+		const saveButtonDisabled = true;// !this.isModified();
 
 		if (showSaveButton) this.saveButtonHasBeenShown_ = true;
 
