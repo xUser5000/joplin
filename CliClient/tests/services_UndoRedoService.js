@@ -21,18 +21,20 @@ describe('services_UndoRedoService', function() {
 	});
 
 	it('should undo and redo', asyncTest(async () => {
-		const service = new UndoRedoService('test');
+		const service = new UndoRedoService();
 
 		expect(service.canUndo).toBe(false);
 		expect(service.canRedo).toBe(false);
 
-		service.push('test 2');
+		service.push('test');
 		expect(service.canUndo).toBe(true);
 		expect(service.canRedo).toBe(false);
+		service.push('test 2');
 		service.push('test 3');
 
-		expect(service.undo()).toBe('test 2');
+		expect(service.undo()).toBe('test 3');
 		expect(service.canRedo).toBe(true);
+		expect(service.undo()).toBe('test 2');
 		expect(service.undo()).toBe('test');
 
 		expect(checkThrow(() => service.undo())).toBe(true);
@@ -40,8 +42,9 @@ describe('services_UndoRedoService', function() {
 		expect(service.canUndo).toBe(false);
 		expect(service.canRedo).toBe(true);
 
-		expect(service.redo()).toBe('test 2');
+		expect(service.redo()).toBe('test');
 		expect(service.canUndo).toBe(true);
+		expect(service.redo()).toBe('test 2');
 		expect(service.redo()).toBe('test 3');
 
 		expect(service.canRedo).toBe(false);
@@ -50,8 +53,9 @@ describe('services_UndoRedoService', function() {
 	}));
 
 	it('should clear the redo stack when undoing', asyncTest(async () => {
-		const service = new UndoRedoService('test');
+		const service = new UndoRedoService();
 
+		service.push('test');
 		service.push('test 2');
 		service.push('test 3');
 
@@ -61,7 +65,22 @@ describe('services_UndoRedoService', function() {
 		service.push('test 4');
 		expect(service.canRedo).toBe(false);
 
+		expect(service.undo()).toBe('test 4');
 		expect(service.undo()).toBe('test 2');
+	}));
+
+	it('should limit the size of the undo stack', asyncTest(async () => {
+		const service = new UndoRedoService();
+
+		for (let i = 0; i < 30; i++) {
+			service.push(`test${i}`);
+		}
+
+		for (let i = 0; i < 20; i++) {
+			service.undo();
+		}
+
+		expect(service.canUndo).toBe(false);
 	}));
 
 });
