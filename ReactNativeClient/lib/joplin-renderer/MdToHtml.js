@@ -20,7 +20,7 @@ const rules = {
 };
 
 const setupLinkify = require('./MdToHtml/setupLinkify');
-const hljs = require('highlight.js');
+// const hljs = require('highlight.js');
 const uslug = require('uslug');
 const markdownItAnchor = require('markdown-it-anchor');
 // The keys must match the corresponding entry in Setting.js
@@ -229,11 +229,11 @@ class MdToHtml {
 					if (options.codeHighlightCacheKey && this.cachedHighlightedCode_[cacheKey]) {
 						hlCode = this.cachedHighlightedCode_[cacheKey];
 					} else {
-						if (lang && hljs.getLanguage(lang)) {
-							hlCode = hljs.highlight(lang, trimmedStr, true).value;
-						} else {
-							hlCode = hljs.highlightAuto(trimmedStr).value;
-						}
+						// if (lang && hljs.getLanguage(lang)) {
+						// 	hlCode = hljs.highlight(lang, trimmedStr, true).value;
+						// } else {
+						// 	hlCode = hljs.highlightAuto(trimmedStr).value;
+						// }
 						this.cachedHighlightedCode_[cacheKey] = hlCode;
 					}
 
