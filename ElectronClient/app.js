@@ -30,8 +30,11 @@ const Menu = bridge().Menu;
 const PluginManager = require('lib/services/PluginManager');
 const RevisionService = require('lib/services/RevisionService');
 const MigrationService = require('lib/services/MigrationService');
+const CommandService = require('lib/services/CommandService').default;
 const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
+
+require('lib/commands/newNote');
 
 const pluginClasses = [
 	require('./plugins/GotoAnything.min'),
@@ -521,17 +524,7 @@ class Application extends BaseApplication {
 			},
 		};
 
-		const newNoteItem = {
-			label: _('New note'),
-			accelerator: 'CommandOrControl+N',
-			screens: ['Main'],
-			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'newNote',
-				});
-			},
-		};
+		const newNoteItem = CommandService.instance().commandToMenuItem('newNote', 'CommandOrControl+N');
 
 		const newTodoItem = {
 			label: _('New to-do'),
@@ -1240,6 +1233,15 @@ class Application extends BaseApplication {
 
 		if (!state) state = this.store().getState();
 
+		const menuEnabledState = CommandService.instance().commandsEnabledState(this.previousMenuEnabledState);
+		this.previousMenuEnabledState = menuEnabledState;
+
+		for (const itemId in menuEnabledState) {
+			const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
+			if (!menuItem) continue;
+			menuItem.enabled = menuEnabledState[itemId];
+		}
+
 		const selectedNoteIds = state.selectedNoteIds;
 		const note = selectedNoteIds.length === 1 ? await Note.load(selectedNoteIds[0]) : null;
 		const aceEditorViewerOnly = state.settings['editor.codeView'] && state.noteVisiblePanes.length === 1 && state.noteVisiblePanes[0] === 'viewer';
@@ -1400,9 +1402,11 @@ class Application extends BaseApplication {
 		PluginManager.instance().setLogger(reg.logger());
 		PluginManager.instance().register(pluginClasses);
 
-		this.updateMenu('Main');
-
 		this.initRedux();
+
+		CommandService.instance().initialize(this.store());
+
+		this.updateMenu('Main');
 
 		// Since the settings need to be loaded before the store is created, it will never
 		// receive the SETTING_UPDATE_ALL even, which mean state.settings will not be

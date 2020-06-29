@@ -25,6 +25,7 @@ const VerticalResizer = require('./VerticalResizer.min');
 const PluginManager = require('lib/services/PluginManager');
 const TemplateUtils = require('lib/TemplateUtils');
 const EncryptionService = require('lib/services/EncryptionService');
+const CommandService = require('lib/services/CommandService').default;
 const ipcRenderer = require('electron').ipcRenderer;
 const { time } = require('lib/time-utils.js');
 
@@ -787,14 +788,7 @@ class MainScreenComponent extends React.Component {
 			},
 		});
 
-		headerItems.push({
-			title: _('New note'),
-			iconName: 'fa-file',
-			enabled: !!folders.length && !onConflictFolder,
-			onClick: () => {
-				this.doCommand({ name: 'newNote' });
-			},
-		});
+		headerItems.push(CommandService.instance().commandToToolbarButton('newNote'));
 
 		headerItems.push({
 			title: _('New to-do'),
