@@ -1,11 +1,11 @@
-import CommandService, { utils } from '../services/CommandService';
+import { utils } from '../services/CommandService';
 const Setting = require('lib/models/Setting');
 const Note = require('lib/models/Note');
 const Folder = require('lib/models/Folder');
 const TemplateUtils = require('lib/TemplateUtils');
 const { _ } = require('lib/locale');
 
-CommandService.instance().register({
+export default {
 	name: 'newNote',
 	label: () => _('New note'),
 	iconName: 'fa-file',
@@ -34,4 +34,4 @@ CommandService.instance().register({
 		const { folders, selectedFolderId } = utils.store.getState();
 		return !!folders.length && selectedFolderId !== Folder.conflictFolderId();
 	},
-});
+};

@@ -32,7 +32,7 @@ export default class CommandService extends BaseService {
 
 	private static instance_:CommandService;
 
-	static instance() {
+	static instance():CommandService {
 		if (this.instance_) return this.instance_;
 		this.instance_ = new CommandService();
 		return this.instance_;
@@ -44,7 +44,7 @@ export default class CommandService extends BaseService {
 		utils.store = store;
 	}
 
-	commandByName(name:string) {
+	commandByName(name:string):Command {
 		const command = this.commands_[name];
 		if (!command) throw new Error(`No such command: ${name}`);
 		return command;
@@ -58,6 +58,10 @@ export default class CommandService extends BaseService {
 		if (!command.label) command.label = () => '';
 		if (!command.iconName) command.iconName = '';
 		this.commands_[command.name] = command;
+	}
+
+	registerCommands(commands:Command[]) {
+		for (const c of commands) this.register(c);
 	}
 
 	execute(commandName:string, ...args:any[]) {

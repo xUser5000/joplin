@@ -447,7 +447,7 @@ class MainScreenComponent extends React.Component {
 					onClose: async answer => {
 						if (answer) {
 							if (command.noteType === 'note' || command.noteType === 'todo') {
-								createNewNote(answer.value, command.noteType === 'todo');
+								CommandService.instance().execute('newNote', answer.value, command.noteType === 'todo');
 							} else {
 								this.props.dispatch({
 									type: 'WINDOW_COMMAND',
@@ -761,12 +761,10 @@ class MainScreenComponent extends React.Component {
 			this.props.style,
 		);
 		const promptOptions = this.state.promptOptions;
-		const folders = this.props.folders;
 		const notes = this.props.notes;
 		const sidebarVisibility = this.props.sidebarVisibility;
 		const noteListVisibility = this.props.noteListVisibility;
 		const styles = this.styles(this.props.theme, style.width, style.height, this.messageBoxVisible(), sidebarVisibility, noteListVisibility, this.props.sidebarWidth, this.props.noteListWidth);
-		const onConflictFolder = this.props.selectedFolderId === Folder.conflictFolderId();
 
 		const headerItems = [];
 
@@ -789,15 +787,16 @@ class MainScreenComponent extends React.Component {
 		});
 
 		headerItems.push(CommandService.instance().commandToToolbarButton('newNote'));
+		headerItems.push(CommandService.instance().commandToToolbarButton('newTodo'));
 
-		headerItems.push({
-			title: _('New to-do'),
-			iconName: 'fa-check-square',
-			enabled: !!folders.length && !onConflictFolder,
-			onClick: () => {
-				this.doCommand({ name: 'newTodo' });
-			},
-		});
+		// headerItems.push({
+		// 	title: _('New to-do'),
+		// 	iconName: 'fa-check-square',
+		// 	enabled: !!folders.length && !onConflictFolder,
+		// 	onClick: () => {
+		// 		this.doCommand({ name: 'newTodo' });
+		// 	},
+		// });
 
 		headerItems.push({
 			title: _('New notebook'),

@@ -34,7 +34,10 @@ const CommandService = require('lib/services/CommandService').default;
 const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
 
-require('lib/commands/newNote');
+const commands = [
+	require('lib/commands/newNote').default,
+	require('lib/commands/newTodo').default,
+];
 
 const pluginClasses = [
 	require('./plugins/GotoAnything.min'),
@@ -525,18 +528,7 @@ class Application extends BaseApplication {
 		};
 
 		const newNoteItem = CommandService.instance().commandToMenuItem('newNote', 'CommandOrControl+N');
-
-		const newTodoItem = {
-			label: _('New to-do'),
-			accelerator: 'CommandOrControl+T',
-			screens: ['Main'],
-			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'newTodo',
-				});
-			},
-		};
+		const newTodoItem = CommandService.instance().commandToMenuItem('newTodo', 'CommandOrControl+T');
 
 		const newNotebookItem = {
 			label: _('New notebook'),
@@ -1405,6 +1397,7 @@ class Application extends BaseApplication {
 		this.initRedux();
 
 		CommandService.instance().initialize(this.store());
+		CommandService.instance().registerCommands(commands);
 
 		this.updateMenu('Main');
 
