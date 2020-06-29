@@ -789,15 +789,6 @@ class MainScreenComponent extends React.Component {
 		headerItems.push(CommandService.instance().commandToToolbarButton('newNote'));
 		headerItems.push(CommandService.instance().commandToToolbarButton('newTodo'));
 
-		// headerItems.push({
-		// 	title: _('New to-do'),
-		// 	iconName: 'fa-check-square',
-		// 	enabled: !!folders.length && !onConflictFolder,
-		// 	onClick: () => {
-		// 		this.doCommand({ name: 'newTodo' });
-		// 	},
-		// });
-
 		headerItems.push({
 			title: _('New notebook'),
 			iconName: 'fa-book',

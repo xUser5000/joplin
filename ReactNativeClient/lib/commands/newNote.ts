@@ -1,14 +1,19 @@
-import { utils } from '../services/CommandService';
+import { utils, CommandRuntime, CommandDeclaration } from '../services/CommandService';
 const Setting = require('lib/models/Setting');
 const Note = require('lib/models/Note');
 const Folder = require('lib/models/Folder');
 const TemplateUtils = require('lib/TemplateUtils');
 const { _ } = require('lib/locale');
 
-export default {
+const declaration:CommandDeclaration = {
 	name: 'newNote',
 	label: () => _('New note'),
 	iconName: 'fa-file',
+};
+
+export default declaration;
+
+export const runtime:CommandRuntime = {
 	execute: async (template:string = null, isTodo:boolean = false) => {
 		const folderId = Setting.value('activeFolderId');
 		if (!folderId) return;

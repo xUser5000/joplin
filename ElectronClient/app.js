@@ -35,8 +35,8 @@ const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
 
 const commands = [
-	require('lib/commands/newNote').default,
-	require('lib/commands/newTodo').default,
+	require('lib/commands/newNote'),
+	require('lib/commands/newTodo'),
 ];
 
 const pluginClasses = [
@@ -1397,7 +1397,7 @@ class Application extends BaseApplication {
 		this.initRedux();
 
 		CommandService.instance().initialize(this.store());
-		CommandService.instance().registerCommands(commands);
+		for (const command of commands) CommandService.instance().registerCommand(command.default, command.runtime);
 
 		this.updateMenu('Main');
 
