@@ -52,6 +52,7 @@ Tools/commit_hook.txt
 
 # AUTO-GENERATED - EXCLUDED TYPESCRIPT BUILD
 ElectronClient/global.d.js
+ElectronClient/gui/commands/newNotebook.js
 ElectronClient/gui/commands/toggleNoteList.js
 ElectronClient/gui/commands/toggleSidebar.js
 ElectronClient/gui/ErrorBoundary.js

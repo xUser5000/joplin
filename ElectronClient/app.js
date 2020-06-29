@@ -39,6 +39,7 @@ const commands = [
 	require('lib/commands/newTodo'),
 	require('./gui/commands/toggleSidebar'),
 	require('./gui/commands/toggleNoteList'),
+	require('./gui/commands/newNotebook'),
 ];
 
 const pluginClasses = [
@@ -531,29 +532,7 @@ class Application extends BaseApplication {
 
 		const newNoteItem = CommandService.instance().commandToMenuItem('newNote', 'CommandOrControl+N');
 		const newTodoItem = CommandService.instance().commandToMenuItem('newTodo', 'CommandOrControl+T');
-
-		const newNotebookItem = {
-			label: _('New notebook'),
-			screens: ['Main'],
-			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'newNotebook',
-				});
-			},
-		};
-
-		const newSubNotebookItem = {
-			label: _('New sub-notebook'),
-			screens: ['Main'],
-			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'newSubNotebook',
-					activeFolderId: Setting.value('activeFolderId'),
-				});
-			},
-		};
+		const newNotebookItem = CommandService.instance().commandToMenuItem('newNotebook');
 
 		const printItem = {
 			label: _('Print'),
@@ -727,8 +706,7 @@ class Application extends BaseApplication {
 			},
 			shim.isMac() ? noItem : newNoteItem,
 			shim.isMac() ? noItem : newTodoItem,
-			shim.isMac() ? noItem : newNotebookItem,
-			shim.isMac() ? noItem : newSubNotebookItem, {
+			shim.isMac() ? noItem : newNotebookItem, {
 				type: 'separator',
 				visible: shim.isMac() ? false : true,
 			}, {
@@ -783,8 +761,7 @@ class Application extends BaseApplication {
 			submenu: [
 				newNoteItem,
 				newTodoItem,
-				newNotebookItem,
-				newSubNotebookItem, {
+				newNotebookItem, {
 					label: _('Close Window'),
 					platforms: ['darwin'],
 					accelerator: 'Command+W',

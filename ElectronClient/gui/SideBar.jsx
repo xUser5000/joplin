@@ -2,6 +2,7 @@ const React = require('react');
 const { connect } = require('react-redux');
 const shared = require('lib/components/shared/side-menu-shared.js');
 const { Synchronizer } = require('lib/synchronizer.js');
+const CommandService = require('lib/services/CommandService.js').default;
 const BaseModel = require('lib/BaseModel.js');
 const Setting = require('lib/models/Setting.js');
 const Folder = require('lib/models/Folder.js');
@@ -299,16 +300,7 @@ class SideBarComponent extends React.Component {
 
 		if (itemType === BaseModel.TYPE_FOLDER && !item.encryption_applied) {
 			menu.append(
-				new MenuItem({
-					label: _('New sub-notebook'),
-					click: () => {
-						this.props.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'newSubNotebook',
-							activeFolderId: itemId,
-						});
-					},
-				})
+				new MenuItem(CommandService.instance().commandToMenuItem('newNotebook', null, itemId)),
 			);
 		}
 

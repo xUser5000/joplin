@@ -133,14 +133,14 @@ export default class CommandService extends BaseService {
 		};
 	}
 
-	commandToMenuItem(commandName:string, accelerator:string = null) {
+	commandToMenuItem(commandName:string, accelerator:string = null, ...executeArgs:any[]) {
 		const command = this.commandByName(commandName);
 
 		const item:any = {
 			id: command.declaration.name,
 			label: command.declaration.label(),
 			click: () => {
-				command.runtime.execute();
+				command.runtime.execute(...executeArgs);
 			},
 		};
 

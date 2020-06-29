@@ -23,7 +23,6 @@ const { bridge } = require('electron').remote.require('./bridge');
 const eventManager = require('../eventManager');
 const VerticalResizer = require('./VerticalResizer.min');
 const PluginManager = require('lib/services/PluginManager');
-const TemplateUtils = require('lib/TemplateUtils');
 const EncryptionService = require('lib/services/EncryptionService');
 const CommandService = require('lib/services/CommandService').default;
 const ipcRenderer = require('electron').ipcRenderer;
@@ -140,72 +139,12 @@ class MainScreenComponent extends React.Component {
 	async doCommand(command) {
 		if (!command) return;
 
-		const createNewNote = async (template, isTodo) => {
-			const folderId = Setting.value('activeFolderId');
-			if (!folderId) return;
-
-			const body = template ? TemplateUtils.render(template) : '';
-
-			const defaultValues = Note.previewFieldsWithDefaultValues({ includeTimestamps: false });
-
-			let newNote = Object.assign({}, defaultValues, {
-				parent_id: folderId,
-				is_todo: isTodo ? 1 : 0,
-				body: body,
-			});
-
-			newNote = await Note.save(newNote, { provisional: true });
-
-			this.props.dispatch({
-				type: 'NOTE_SELECT',
-				id: newNote.id,
-			});
-		};
-
 		let commandProcessed = true;
 
 		let delayedFunction = null;
 		let delayedArgs = null;
 
-		if (command.name === 'newNote') {
-			if (!this.props.folders.length) {
-				bridge().showErrorMessageBox(_('Please create a notebook first.'));
-			} else {
-				await createNewNote(null, false);
-			}
-		} else if (command.name === 'newTodo') {
-			if (!this.props.folders.length) {
-				bridge().showErrorMessageBox(_('Please create a notebook first'));
-			} else {
-				await createNewNote(null, true);
-			}
-		} else if (command.name === 'newNotebook' || (command.name === 'newSubNotebook' && command.activeFolderId)) {
-			this.setState({
-				promptOptions: {
-					label: _('Notebook title:'),
-					onClose: async answer => {
-						if (answer) {
-							let folder = null;
-							try {
-								folder = await Folder.save({ title: answer }, { userSideValidation: true });
-								if (command.name === 'newSubNotebook') folder = await Folder.moveToFolder(folder.id, command.activeFolderId);
-							} catch (error) {
-								bridge().showErrorMessageBox(error.message);
-							}
-
-							if (folder) {
-								this.props.dispatch({
-									type: 'FOLDER_SELECT',
-									id: folder.id,
-								});
-							}
-						}
-
-						this.setState({ promptOptions: null });
-					},
-				},
-			});
-		} else if (command.name === 'setTags') {
+		if (command.name === 'setTags') {
 			const tags = await Tag.commonTagsByNoteIds(command.noteIds);
 			const startTags = tags
 				.map(a => {
@@ -773,6 +712,37 @@ class MainScreenComponent extends React.Component {
 				});
 			},
 		});
+
+		CommandService.instance().registerRuntime('newNotebook', {
+			execute: async (parentId = null) => {
+				this.setState({
+					promptOptions: {
+						label: _('Notebook title:'),
+						onClose: async answer => {
+							if (answer) {
+								let folder = null;
+								try {
+									const toSave = { title: answer };
+									if (parentId) toSave.parent_id = parentId;
+									folder = await Folder.save(toSave, { userSideValidation: true });
+								} catch (error) {
+									bridge().showErrorMessageBox(error.message);
+								}
+
+								if (folder) {
+									this.props.dispatch({
+										type: 'FOLDER_SELECT',
+										id: folder.id,
+									});
+								}
+							}
+
+							this.setState({ promptOptions: null });
+						},
+					},
+				});
+			},
+		});
 	}
 
 	unregisterCommands() {
@@ -803,13 +773,13 @@ class MainScreenComponent extends React.Component {
 		headerItems.push(CommandService.instance().commandToToolbarButton('newTodo'));
 		headerItems.push(CommandService.instance().commandToToolbarButton('newNotebook'));
 
-		headerItems.push({
-			title: _('New notebook'),
-			iconName: 'fa-book',
-			onClick: () => {
-				this.doCommand({ name: 'newNotebook' });
-			},
-		});
+		// headerItems.push({
+		// 	title: _('New notebook'),
+		// 	iconName: 'fa-book',
+		// 	onClick: () => {
+		// 		this.doCommand({ name: 'newNotebook' });
+		// 	},
+		// });
 
 		headerItems.push({
 			title: _('Code View'),
