@@ -37,6 +37,8 @@ const CssUtils = require('lib/CssUtils');
 const commands = [
 	require('lib/commands/newNote'),
 	require('lib/commands/newTodo'),
+	require('./gui/commands/toggleSidebar'),
+	require('./gui/commands/toggleNoteList'),
 ];
 
 const pluginClasses = [
@@ -1397,7 +1399,13 @@ class Application extends BaseApplication {
 		this.initRedux();
 
 		CommandService.instance().initialize(this.store());
-		for (const command of commands) CommandService.instance().registerCommand(command.default, command.runtime);
+
+		for (const command of commands) {
+			CommandService.instance().registerDeclaration(command.default);
+			if (command.runtime) {
+				CommandService.instance().registerRuntime(command.default.name, command.runtime);
+			}
+		}
 
 		this.updateMenu('Main');
 

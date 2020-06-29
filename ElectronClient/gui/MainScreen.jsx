@@ -44,6 +44,8 @@ class MainScreenComponent extends React.Component {
 			shareNoteDialogOptions: {},
 		};
 
+		this.registerCommands();
+
 		this.setupAppCloseHandling();
 
 		this.notePropertiesDialog_close = this.notePropertiesDialog_close.bind(this);
@@ -104,6 +106,10 @@ class MainScreenComponent extends React.Component {
 
 	shareNoteDialog_close() {
 		this.setState({ shareNoteDialogOptions: {} });
+	}
+
+	componentWillUnmount() {
+		this.unregisterCommands();
 	}
 
 	UNSAFE_componentWillReceiveProps(newProps) {
@@ -751,6 +757,29 @@ class MainScreenComponent extends React.Component {
 		return this.props.hasDisabledSyncItems || this.props.showMissingMasterKeyMessage || this.props.showNeedUpgradingMasterKeyMessage || this.props.showShouldReencryptMessage || this.props.hasDisabledEncryptionItems;
 	}
 
+	registerCommands() {
+		CommandService.instance().registerRuntime('toggleSidebar', {
+			execute: async () => {
+				this.props.dispatch({
+					type: 'SIDEBAR_VISIBILITY_TOGGLE',
+				});
+			},
+		});
+
+		CommandService.instance().registerRuntime('toggleNoteList', {
+			execute: async () => {
+				this.props.dispatch({
+					type: 'NOTELIST_VISIBILITY_TOGGLE',
+				});
+			},
+		});
+	}
+
+	unregisterCommands() {
+		CommandService.instance().unregisterRuntime('toggleSidebar');
+		CommandService.instance().unregisterRuntime('toggleNoteList');
+	}
+
 	render() {
 		const theme = themeStyle(this.props.theme);
 		const style = Object.assign(
@@ -768,26 +797,11 @@ class MainScreenComponent extends React.Component {
 
 		const headerItems = [];
 
-		headerItems.push({
-			title: _('Toggle sidebar'),
-			iconName: 'fa-bars',
-			iconRotation: this.props.sidebarVisibility ? 0 : 90,
-			onClick: () => {
-				this.doCommand({ name: 'toggleSidebar' });
-			},
-		});
-
-		headerItems.push({
-			title: _('Toggle note list'),
-			iconName: 'fa-align-justify',
-			iconRotation: noteListVisibility ? 0 : 90,
-			onClick: () => {
-				this.doCommand({ name: 'toggleNoteList' });
-			},
-		});
-
+		headerItems.push(CommandService.instance().commandToToolbarButton('toggleSidebar', { iconRotation: sidebarVisibility ? 0 : 90 }));
+		headerItems.push(CommandService.instance().commandToToolbarButton('toggleNoteList', { iconRotation: noteListVisibility ? 0 : 90 }));
 		headerItems.push(CommandService.instance().commandToToolbarButton('newNote'));
 		headerItems.push(CommandService.instance().commandToToolbarButton('newTodo'));
+		headerItems.push(CommandService.instance().commandToToolbarButton('newNotebook'));
 
 		headerItems.push({
 			title: _('New notebook'),

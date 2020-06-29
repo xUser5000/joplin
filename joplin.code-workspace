@@ -313,7 +313,10 @@
 			"D:/Web/www/nextcloud/apps/joplin/Tools/**/github_oauth_token.txt": true,
 			"D:/Web/www/nextcloud/apps/joplin/Tools/**/node_modules/": true,
 			"D:/Web/www/nextcloud/apps/joplin/**/vendor/": true,
-			"D:/Web/www/nextcloud/apps/joplin/**/dist/": true
+			"D:/Web/www/nextcloud/apps/joplin/**/dist/": true,
+			"ReactNativeClient/lib/commands/newNote.js": true,
+			"ReactNativeClient/lib/commands/newTodo.js": true,
+			"ReactNativeClient/lib/services/CommandService.js": true
 		},
 		"spellright.language": [
 			"en"

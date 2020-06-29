@@ -59,11 +59,6 @@ export default class CommandService extends BaseService {
 		return command;
 	}
 
-	registerCommand(declaration:CommandDeclaration, runtime:CommandRuntime) {
-		this.registerDeclaration(declaration);
-		this.registerRuntime(declaration.name, runtime);
-	}
-
 	registerDeclaration(declaration:CommandDeclaration) {
 		if (this.commands_[declaration.name]) throw new Error(`There is already a command with name ${declaration.name}`);
 
@@ -71,12 +66,19 @@ export default class CommandService extends BaseService {
 		if (!declaration.label) declaration.label = () => '';
 		if (!declaration.iconName) declaration.iconName = '';
 
+		// In TypeScript it's not an issue, but in JavaScript it's easy to accidentally set the label
+		// to a string instead of a function, and it will cause strange errors that are hard to debug.
+		// So here check early that we have the right type.
+		if (typeof declaration.label !== 'function') throw new Error(`declaration.label must be a function: ${declaration.name}`);
+
 		this.commands_[declaration.name] = {
 			declaration: declaration,
 		};
 	}
 
 	registerRuntime(commandName:string, runtime:CommandRuntime) {
+		if (typeof commandName !== 'string') throw new Error(`Command name must be a string. Got: ${JSON.stringify(commandName)}`);
+
 		const command = this.commandByName(commandName);
 		if (command.runtime) throw new Error(`Runtime is already registered for command: ${commandName}`);
 
@@ -102,7 +104,7 @@ export default class CommandService extends BaseService {
 		return command.runtime.isEnabled();
 	}
 
-	commandToToolbarButton(commandName:string) {
+	commandToToolbarButton(commandName:string, additionalOptions:any = null) {
 		const command = this.commandByName(commandName, true);
 
 		return {
@@ -112,6 +114,7 @@ export default class CommandService extends BaseService {
 			onClick: () => {
 				command.runtime.execute();
 			},
+			...additionalOptions,
 		};
 	}
 
@@ -135,8 +138,8 @@ export default class CommandService extends BaseService {
 		const output:any = {};
 
 		for (const name in this.commands_) {
-			const command = this.commandByName(name, true);
-			const enabled = command.runtime.isEnabled();
+			const command = this.commandByName(name);
+			const enabled = command.runtime ? command.runtime.isEnabled() : false;
 			if (!previousState || previousState[name] !== enabled) {
 				output[name] = enabled;
 			}
