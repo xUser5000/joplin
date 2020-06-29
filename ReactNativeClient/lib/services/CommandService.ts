@@ -36,6 +36,11 @@ export const utils:Utils = {
 	},
 };
 
+interface CommandByNameOptions {
+	mustExist?:boolean,
+	runtimeMustBeRegistered?:boolean,
+}
+
 export default class CommandService extends BaseService {
 
 	private static instance_:CommandService;
@@ -52,15 +57,25 @@ export default class CommandService extends BaseService {
 		utils.store = store;
 	}
 
-	commandByName(name:string, runtimeMustBeRegistered:boolean = false):Command {
+	commandByName(name:string, options:CommandByNameOptions = null):Command {
+		options = {
+			mustExist: true,
+			runtimeMustBeRegistered: false,
+		};
+
 		const command = this.commands_[name];
-		if (!command) throw new Error(`No such command: ${name}`);
-		if (runtimeMustBeRegistered && !command.runtime) throw new Error(`Runtime is not registered for command ${name}`);
+
+		if (!command) {
+			if (options.mustExist) throw new Error(`No such command: ${name}`);
+			return null;
+		}
+
+		if (options.runtimeMustBeRegistered && !command.runtime) throw new Error(`Runtime is not registered for command ${name}`);
 		return command;
 	}
 
 	registerDeclaration(declaration:CommandDeclaration) {
-		if (this.commands_[declaration.name]) throw new Error(`There is already a command with name ${declaration.name}`);
+		// if (this.commands_[declaration.name]) throw new Error(`There is already a command with name ${declaration.name}`);
 
 		declaration = { ...declaration };
 		if (!declaration.label) declaration.label = () => '';
@@ -80,7 +95,7 @@ export default class CommandService extends BaseService {
 		if (typeof commandName !== 'string') throw new Error(`Command name must be a string. Got: ${JSON.stringify(commandName)}`);
 
 		const command = this.commandByName(commandName);
-		if (command.runtime) throw new Error(`Runtime is already registered for command: ${commandName}`);
+		// if (command.runtime) throw new Error(`Runtime is already registered for command: ${commandName}`);
 
 		runtime = Object.assign({}, runtime);
 		if (!runtime.isEnabled) runtime.isEnabled = () => true;
@@ -88,8 +103,8 @@ export default class CommandService extends BaseService {
 	}
 
 	unregisterRuntime(commandName:string) {
-		const command = this.commandByName(commandName);
-		if (!command.runtime) throw new Error(`Trying to unregister a runtime that has not been registered: ${commandName}`);
+		const command = this.commandByName(commandName, { mustExist: false });
+		if (!command || !command.runtime) return; // throw new Error(`Trying to unregister a runtime that has not been registered: ${commandName}`);
 		delete command.runtime;
 	}
 
@@ -100,12 +115,12 @@ export default class CommandService extends BaseService {
 	}
 
 	isEnabled(commandName:string):boolean {
-		const command = this.commandByName(commandName, true);
+		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
 		return command.runtime.isEnabled();
 	}
 
 	commandToToolbarButton(commandName:string, additionalOptions:any = null) {
-		const command = this.commandByName(commandName, true);
+		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
 
 		return {
 			title: command.declaration.label(),

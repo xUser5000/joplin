@@ -64,6 +64,7 @@ Modules/TinyMCE/langs/
 ElectronClient/global.d.js
 ElectronClient/gui/commands/toggleNoteList.js
 ElectronClient/gui/commands/toggleSidebar.js
+ElectronClient/gui/ErrorBoundary.js
 ElectronClient/gui/MultiNoteActions.js
 ElectronClient/gui/NoteContentPropertiesDialog.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/AceEditor.js
