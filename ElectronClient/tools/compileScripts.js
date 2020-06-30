@@ -43,6 +43,7 @@ function convertJsx(path) {
 
 module.exports = function() {
 	convertJsx(`${__dirname}/../gui`);
+	convertJsx(`${__dirname}/../gui/MainScreen`);
 	convertJsx(`${__dirname}/../plugins`);
 
 	const libContent = [

@@ -35,11 +35,11 @@ const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
 
 const commands = [
-	require('lib/commands/newNote'),
-	require('lib/commands/newTodo'),
-	require('./gui/commands/toggleSidebar'),
-	require('./gui/commands/toggleNoteList'),
-	require('./gui/commands/newNotebook'),
+	require('./gui/MainScreen/commands/newNote'),
+	require('./gui/MainScreen/commands/newTodo'),
+	require('./gui/MainScreen/commands/toggleSidebar'),
+	require('./gui/MainScreen/commands/toggleNoteList'),
+	require('./gui/MainScreen/commands/newNotebook'),
 ];
 
 const pluginClasses = [
@@ -1378,10 +1378,7 @@ class Application extends BaseApplication {
 		CommandService.instance().initialize(this.store());
 
 		for (const command of commands) {
-			CommandService.instance().registerDeclaration(command.default);
-			if (command.runtime) {
-				CommandService.instance().registerRuntime(command.default.name, command.runtime);
-			}
+			CommandService.instance().registerDeclaration(command.declaration);
 		}
 
 		this.updateMenu('Main');
