@@ -952,17 +952,25 @@ class Application extends BaseApplication {
 							name: 'toggleNoteList',
 						});
 					},
-				}, {
-					label: _('Toggle editor layout'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+L',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'toggleVisiblePanes',
-						});
-					},
-				}, {
+				},
+
+				CommandService.instance().commandToMenuItem('toggleVisiblePanes', 'CommandOrControl+L')
+
+				// {
+				// 	label: _('Toggle editor layout'),
+				// 	screens: ['Main'],
+				// 	accelerator: 'CommandOrControl+L',
+				// 	click: () => {
+				// 		this.dispatch({
+				// 			type: 'WINDOW_COMMAND',
+				// 			name: 'toggleVisiblePanes',
+				// 		});
+				// 	},
+				// }
+
+
+
+				, {
 					type: 'separator',
 					screens: ['Main'],
 				}, {

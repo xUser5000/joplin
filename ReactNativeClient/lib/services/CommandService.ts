@@ -131,9 +131,9 @@ export default class CommandService extends BaseService {
 	}
 
 	isEnabled(commandName:string):boolean {
-		// const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
-		return commandName !== 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
-		// return command.runtime.isEnabled();
+		const command = this.commandByName(commandName);
+		if (!command || !command.runtime) return false;
+		return command.runtime.props ? command.runtime.isEnabled(command.runtime.props) : true;
 	}
 
 	private toolbarExecuteArgs(command:Command, options:CommandToToolbarButtonOptions) {
@@ -149,7 +149,7 @@ export default class CommandService extends BaseService {
 			// title: command.declaration.label(),
 			tooltip: command.declaration.label(),
 			iconName: command.declaration.iconName,
-			enabled: command.runtime.isEnabled(command.runtime.props),
+			enabled: this.isEnabled(commandName),
 			onClick: () => {
 				command.runtime.execute(this.toolbarExecuteArgs(command, options));
 			},
@@ -176,8 +176,7 @@ export default class CommandService extends BaseService {
 		const output:any = {};
 
 		for (const name in this.commands_) {
-			const command = this.commandByName(name);
-			const enabled = command.runtime ? command.runtime.isEnabled({}) : false;
+			const enabled = this.isEnabled(name);
 			if (!previousState || previousState[name] !== enabled) {
 				output[name] = enabled;
 			}

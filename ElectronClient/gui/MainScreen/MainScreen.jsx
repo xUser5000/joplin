@@ -158,6 +158,8 @@ class MainScreenComponent extends React.Component {
 		// TODO: update menu items
 		// TODO: search for each command to see how it's used
 
+		console.warn('MainScreen.doCommand', command);
+
 		if (command.name === 'setTags') {
 			CommandService.instance().execute('setTags', command);
 		} else if (command.name === 'moveToFolder') {
@@ -470,16 +472,7 @@ class MainScreenComponent extends React.Component {
 			},
 		});
 
-		if (this.props.settingEditorCodeView) {
-			headerItems.push({
-				title: _('Layout'),
-				iconName: 'fa-columns',
-				enabled: !!notes.length,
-				onClick: () => {
-					CommandService.instance().execute('toggleVisiblePanes');
-				},
-			});
-		}
+		headerItems.push(CommandService.instance().commandToToolbarButton('toggleVisiblePanes'));
 
 		headerItems.push({
 			title: _('Search...'),
