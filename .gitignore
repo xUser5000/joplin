@@ -53,11 +53,26 @@ Tools/commit_hook.txt
 # AUTO-GENERATED - EXCLUDED TYPESCRIPT BUILD
 ElectronClient/global.d.js
 ElectronClient/gui/ErrorBoundary.js
+ElectronClient/gui/MainScreen/commands/editAlarm.js
+ElectronClient/gui/MainScreen/commands/exportPdf.js
+ElectronClient/gui/MainScreen/commands/hideModalMessage.js
+ElectronClient/gui/MainScreen/commands/moveToFolder.js
 ElectronClient/gui/MainScreen/commands/newNote.js
 ElectronClient/gui/MainScreen/commands/newNotebook.js
 ElectronClient/gui/MainScreen/commands/newTodo.js
+ElectronClient/gui/MainScreen/commands/print.js
+ElectronClient/gui/MainScreen/commands/renameFolder.js
+ElectronClient/gui/MainScreen/commands/renameTag.js
+ElectronClient/gui/MainScreen/commands/search.js
+ElectronClient/gui/MainScreen/commands/selectTemplate.js
+ElectronClient/gui/MainScreen/commands/setTags.js
+ElectronClient/gui/MainScreen/commands/showModalMessage.js
+ElectronClient/gui/MainScreen/commands/showNoteContentProperties.js
+ElectronClient/gui/MainScreen/commands/showNoteProperties.js
+ElectronClient/gui/MainScreen/commands/showShareNoteDialog.js
 ElectronClient/gui/MainScreen/commands/toggleNoteList.js
 ElectronClient/gui/MainScreen/commands/toggleSidebar.js
+ElectronClient/gui/MainScreen/commands/toggleVisiblePanes.js
 ElectronClient/gui/MultiNoteActions.js
 ElectronClient/gui/NoteContentPropertiesDialog.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/AceEditor.js

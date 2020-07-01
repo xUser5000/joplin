@@ -1,8 +1,10 @@
 const BaseService = require('lib/services/BaseService');
 
 export interface CommandRuntime {
-	execute: Function
-	isEnabled?():boolean
+	execute(props:any):void
+	isEnabled?(props:any):boolean
+	mapStateToProps?(state:any):any
+	props?:any
 }
 
 export interface CommandDeclaration {
@@ -41,6 +43,11 @@ interface CommandByNameOptions {
 	runtimeMustBeRegistered?:boolean,
 }
 
+interface CommandToToolbarButtonOptions {
+	executeArgs?:any,
+	isEnabledArgs?:any,
+}
+
 export default class CommandService extends BaseService {
 
 	private static instance_:CommandService;
@@ -55,6 +62,15 @@ export default class CommandService extends BaseService {
 
 	initialize(store:any) {
 		utils.store = store;
+	}
+
+	mapStateToProps(state:any) {
+		for (const name in this.commands_) {
+			const command = this.commands_[name];
+			if (!command.runtime || !command.runtime.mapStateToProps) continue;
+			const props = command.runtime.mapStateToProps(state);
+			command.runtime.props = props;
+		}
 	}
 
 	commandByName(name:string, options:CommandByNameOptions = null):Command {
@@ -108,39 +124,41 @@ export default class CommandService extends BaseService {
 		delete command.runtime;
 	}
 
-	execute(commandName:string, ...args:any[]) {
+	execute(commandName:string, args:any) {
 		const command = this.commandByName(commandName);
-		if (!command.runtime.isEnabled()) return;
-		command.runtime.execute(...args);
+		// if (!command.runtime.isEnabled()) return;
+		command.runtime.execute(args);
 	}
 
 	isEnabled(commandName:string):boolean {
-		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
-		return command.runtime.isEnabled();
+		// const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
+		return commandName !== 'aaaaaaaaaaaaaaaaaaaaaaaaaa';
+		// return command.runtime.isEnabled();
 	}
 
-	commandToToolbarButton(commandName:string, additionalOptions:any = null) {
+	commandToToolbarButton(commandName:string, options:CommandToToolbarButtonOptions = null) {
 		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
+		const executeArgs = (options && ('executeArgs' in options)) ? options.executeArgs : command.runtime.props;
 
 		return {
-			title: command.declaration.label(),
+			// title: command.declaration.label(),
+			tooltip: command.declaration.label(),
 			iconName: command.declaration.iconName,
-			enabled: command.runtime.isEnabled(),
+			enabled: command.runtime.isEnabled(command.runtime.props),
 			onClick: () => {
-				command.runtime.execute();
+				command.runtime.execute(executeArgs);
 			},
-			...additionalOptions,
 		};
 	}
 
-	commandToMenuItem(commandName:string, accelerator:string = null, ...executeArgs:any[]) {
+	commandToMenuItem(commandName:string, accelerator:string = null, executeArgs:any) {
 		const command = this.commandByName(commandName);
 
 		const item:any = {
 			id: command.declaration.name,
 			label: command.declaration.label(),
 			click: () => {
-				command.runtime.execute(...executeArgs);
+				command.runtime.execute(executeArgs);
 			},
 		};
 
@@ -154,7 +172,7 @@ export default class CommandService extends BaseService {
 
 		for (const name in this.commands_) {
 			const command = this.commandByName(name);
-			const enabled = command.runtime ? command.runtime.isEnabled() : false;
+			const enabled = command.runtime ? command.runtime.isEnabled({}) : false;
 			if (!previousState || previousState[name] !== enabled) {
 				output[name] = enabled;
 			}

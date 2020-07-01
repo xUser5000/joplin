@@ -13,7 +13,7 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = ():CommandRuntime => {
 	return {
-		execute: async (template:string = null, isTodo:boolean = false) => {
+		execute: async ({ template, isTodo }:any) => {
 			const folderId = Setting.value('activeFolderId');
 			if (!folderId) return;
 

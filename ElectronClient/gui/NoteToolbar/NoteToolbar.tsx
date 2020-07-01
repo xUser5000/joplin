@@ -1,10 +1,11 @@
 import * as React from 'react';
+import CommandService from '../../lib/services/CommandService';
 const { connect } = require('react-redux');
 const { buildStyle } = require('lib/theme');
 const Toolbar = require('../Toolbar.min.js');
-const Note = require('lib/models/Note');
+// const Note = require('lib/models/Note');
 const Folder = require('lib/models/Folder');
-const { time } = require('lib/time-utils.js');
+// const { time } = require('lib/time-utils.js');
 const { _ } = require('lib/locale');
 const { substrWithEllipsis } = require('lib/string-utils');
 
@@ -116,21 +117,25 @@ function useToolbarItems(props:NoteToolbarProps) {
 		});
 	}
 
-	if (note.is_todo) {
-		const item:any = {
-			iconName: 'fa-clock',
-			enabled: !note.todo_completed,
-			onClick: () => {
-				onButtonClick({ name: 'setAlarm' });
-			},
-		};
-		if (Note.needAlarm(note)) {
-			item.title = time.formatMsToLocal(note.todo_due);
-		} else {
-			item.tooltip = _('Set alarm');
-		}
-		toolbarItems.push(item);
-	}
+	toolbarItems.push(CommandService.instance().commandToToolbarButton('editAlarm', {
+		executeArgs: { noteId: note.id },
+	}));
+
+	// if (note.is_todo) {
+	// 	const item:any = {
+	// 		iconName: 'fa-clock',
+	// 		enabled: !note.todo_completed,
+	// 		onClick: () => {
+	// 			onButtonClick({ name: 'setAlarm' });
+	// 		},
+	// 	};
+	// 	if (Note.needAlarm(note)) {
+	// 		item.title = time.formatMsToLocal(note.todo_due);
+	// 	} else {
+	// 		item.tooltip = _('Set alarm');
+	// 	}
+	// 	toolbarItems.push(item);
+	// }
 
 	toolbarItems.push({
 		tooltip: _('Tags'),

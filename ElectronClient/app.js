@@ -35,11 +35,26 @@ const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
 
 const commands = [
+	require('./gui/MainScreen/commands/editAlarm'),
+	require('./gui/MainScreen/commands/exportPdf'),
+	require('./gui/MainScreen/commands/hideModalMessage'),
+	require('./gui/MainScreen/commands/moveToFolder'),
 	require('./gui/MainScreen/commands/newNote'),
-	require('./gui/MainScreen/commands/newTodo'),
-	require('./gui/MainScreen/commands/toggleSidebar'),
-	require('./gui/MainScreen/commands/toggleNoteList'),
 	require('./gui/MainScreen/commands/newNotebook'),
+	require('./gui/MainScreen/commands/newTodo'),
+	require('./gui/MainScreen/commands/print'),
+	require('./gui/MainScreen/commands/renameFolder'),
+	require('./gui/MainScreen/commands/renameTag'),
+	require('./gui/MainScreen/commands/search'),
+	require('./gui/MainScreen/commands/selectTemplate'),
+	require('./gui/MainScreen/commands/setTags'),
+	require('./gui/MainScreen/commands/showModalMessage'),
+	require('./gui/MainScreen/commands/showNoteContentProperties'),
+	require('./gui/MainScreen/commands/showNoteProperties'),
+	require('./gui/MainScreen/commands/showShareNoteDialog'),
+	require('./gui/MainScreen/commands/toggleNoteList'),
+	require('./gui/MainScreen/commands/toggleSidebar'),
+	require('./gui/MainScreen/commands/toggleVisiblePanes'),
 ];
 
 const pluginClasses = [

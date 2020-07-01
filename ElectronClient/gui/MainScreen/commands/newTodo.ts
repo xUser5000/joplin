@@ -9,8 +9,8 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = ():CommandRuntime => {
 	return {
-		execute: async (template:string = null) => {
-			return CommandService.instance().execute('newNote', template, true);
+		execute: async ({ template }:any) => {
+			return CommandService.instance().execute('newNote', { template: template, isTodo: true });
 		},
 		isEnabled: () => {
 			return CommandService.instance().isEnabled('newNote');

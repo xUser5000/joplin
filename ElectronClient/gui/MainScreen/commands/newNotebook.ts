@@ -11,7 +11,7 @@ export const declaration:CommandDeclaration = {
 
 export const runtime = (comp:any):CommandRuntime => {
 	return {
-		execute: async (parentId:string = null) => {
+		execute: async ({ parentId }:any) => {
 			comp.setState({
 				promptOptions: {
 					label: _('Notebook title:'),
