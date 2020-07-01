@@ -48,6 +48,10 @@ interface CommandToToolbarButtonOptions {
 	isEnabledArgs?:any,
 }
 
+interface CommandToMenuItemOptions {
+	executeArgs?:any,
+}
+
 export default class CommandService extends BaseService {
 
 	private static instance_:CommandService;
@@ -73,7 +77,7 @@ export default class CommandService extends BaseService {
 		}
 	}
 
-	commandByName(name:string, options:CommandByNameOptions = null):Command {
+	private commandByName(name:string, options:CommandByNameOptions = null):Command {
 		options = {
 			mustExist: true,
 			runtimeMustBeRegistered: false,
@@ -124,10 +128,10 @@ export default class CommandService extends BaseService {
 		delete command.runtime;
 	}
 
-	execute(commandName:string, args:any) {
+	execute(commandName:string, args:any = null) {
 		const command = this.commandByName(commandName);
 		// if (!command.runtime.isEnabled()) return;
-		command.runtime.execute(args);
+		command.runtime.execute(args ? args : {});
 	}
 
 	isEnabled(commandName:string):boolean {
@@ -136,7 +140,7 @@ export default class CommandService extends BaseService {
 		return command.runtime.props ? command.runtime.isEnabled(command.runtime.props) : true;
 	}
 
-	private toolbarExecuteArgs(command:Command, options:CommandToToolbarButtonOptions) {
+	private extractExecuteArgs(command:Command, options:CommandToToolbarButtonOptions | CommandToMenuItemOptions) {
 		if (options && ('executeArgs' in options)) return options.executeArgs;
 		if (command.runtime.props) return command.runtime.props;
 		return {};
@@ -146,24 +150,23 @@ export default class CommandService extends BaseService {
 		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
 
 		return {
-			// title: command.declaration.label(),
 			tooltip: command.declaration.label(),
 			iconName: command.declaration.iconName,
 			enabled: this.isEnabled(commandName),
 			onClick: () => {
-				command.runtime.execute(this.toolbarExecuteArgs(command, options));
+				command.runtime.execute(this.extractExecuteArgs(command, options));
 			},
 		};
 	}
 
-	commandToMenuItem(commandName:string, accelerator:string = null, executeArgs:any) {
+	commandToMenuItem(commandName:string, accelerator:string = null, options:CommandToMenuItemOptions = null) {
 		const command = this.commandByName(commandName);
 
 		const item:any = {
 			id: command.declaration.name,
 			label: command.declaration.label(),
 			click: () => {
-				command.runtime.execute(executeArgs);
+				command.runtime.execute(this.extractExecuteArgs(command, options));
 			},
 		};
 

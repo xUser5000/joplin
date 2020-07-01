@@ -374,6 +374,8 @@ class Application extends BaseApplication {
 	async updateMenu(screen) {
 		if (this.lastMenuScreen_ === screen) return;
 
+		const cmdService = CommandService.instance();
+
 		const sortNoteFolderItems = (type) => {
 			const sortItems = [];
 			const sortOptions = Setting.enumOptions(`${type}.sortOrder.field`);
@@ -480,11 +482,7 @@ class Application extends BaseApplication {
 
 							if (Array.isArray(path)) path = path[0];
 
-							this.dispatch({
-								type: 'WINDOW_COMMAND',
-								name: 'showModalMessage',
-								message: _('Importing from "%s" as "%s" format. Please wait...', path, module.format),
-							});
+							cmdService.execute('showModalMessage', { message: _('Importing from "%s" as "%s" format. Please wait...', path, module.format) });
 
 							const importOptions = {
 								path,
@@ -505,28 +503,16 @@ class Application extends BaseApplication {
 								bridge().showErrorMessageBox(error.message);
 							}
 
-							this.dispatch({
-								type: 'WINDOW_COMMAND',
-								name: 'hideModalMessage',
-							});
+							cmdService.execute('hideModalMessage');
 						},
 					});
 				}
 			}
 		}
 
-		exportItems.push({
-			label: `PDF - ${_('PDF File')}`,
-			screens: ['Main'],
-			click: async () => {
-				const selectedNoteIds = this.store().getState().selectedNoteIds;
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'exportPdf',
-					noteIds: selectedNoteIds,
-				});
-			},
-		});
+		exportItems.push(
+			cmdService.commandToMenuItem('exportPdf')
+		);
 
 		// We need a dummy entry, otherwise the ternary operator to show a
 		// menu item only on a specific OS does not work.
@@ -545,22 +531,10 @@ class Application extends BaseApplication {
 			},
 		};
 
-		const newNoteItem = CommandService.instance().commandToMenuItem('newNote', 'CommandOrControl+N');
-		const newTodoItem = CommandService.instance().commandToMenuItem('newTodo', 'CommandOrControl+T');
-		const newNotebookItem = CommandService.instance().commandToMenuItem('newNotebook');
-
-		const printItem = {
-			label: _('Print'),
-			accelerator: 'CommandOrControl+P',
-			screens: ['Main'],
-			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'print',
-					noteIds: this.store().getState().selectedNoteIds,
-				});
-			},
-		};
+		const newNoteItem = cmdService.commandToMenuItem('newNote', 'CommandOrControl+N');
+		const newTodoItem = cmdService.commandToMenuItem('newTodo', 'CommandOrControl+T');
+		const newNotebookItem = cmdService.commandToMenuItem('newNotebook');
+		const printItem = cmdService.commandToMenuItem('print');
 
 		toolsItemsFirst.push(syncStatusItem, {
 			type: 'separator',
@@ -573,31 +547,20 @@ class Application extends BaseApplication {
 			label: _('Create note from template'),
 			visible: templateDirExists,
 			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'selectTemplate',
-					noteType: 'note',
-				});
+				cmdService.execute('selectTemplate', { noteType: 'note' });
 			},
 		}, {
 			label: _('Create to-do from template'),
 			visible: templateDirExists,
 			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'selectTemplate',
-					noteType: 'todo',
-				});
+				cmdService.execute('selectTemplate', { noteType: 'todo' });
 			},
 		}, {
 			label: _('Insert template'),
 			visible: templateDirExists,
 			accelerator: 'CommandOrControl+Alt+I',
 			click: () => {
-				this.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'selectTemplate',
-				});
+				cmdService.execute('selectTemplate');
 			},
 		}, {
 			label: _('Open template directory'),
@@ -926,126 +889,98 @@ class Application extends BaseApplication {
 			},
 			view: {
 				label: _('&View'),
-				submenu: [{
-					label: _('Toggle sidebar'),
-					screens: ['Main'],
-					accelerator: shim.isMac() ? 'Option+Command+S' : 'F10',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'toggleSidebar',
-						});
-					},
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					label: _('Layout button sequence'),
-					screens: ['Main'],
-					submenu: layoutButtonSequenceOptions,
-				}, {
-					label: _('Toggle note list'),
-					screens: ['Main'],
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'toggleNoteList',
-						});
-					},
-				},
+				submenu: [
 
-				CommandService.instance().commandToMenuItem('toggleVisiblePanes', 'CommandOrControl+L')
+					CommandService.instance().commandToMenuItem('toggleSidebar', shim.isMac() ? 'Option+Command+S' : 'F10'),
 
-				// {
-				// 	label: _('Toggle editor layout'),
-				// 	screens: ['Main'],
-				// 	accelerator: 'CommandOrControl+L',
-				// 	click: () => {
-				// 		this.dispatch({
-				// 			type: 'WINDOW_COMMAND',
-				// 			name: 'toggleVisiblePanes',
-				// 		});
-				// 	},
-				// }
+					{
+						type: 'separator',
+						screens: ['Main'],
+					}, {
+						label: _('Layout button sequence'),
+						screens: ['Main'],
+						submenu: layoutButtonSequenceOptions,
+					},
 
+					CommandService.instance().commandToMenuItem('toggleNoteList'),
+					CommandService.instance().commandToMenuItem('toggleVisiblePanes', 'CommandOrControl+L'),
 
-
-				, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					label: Setting.settingMetadata('notes.sortOrder.field').label(),
-					screens: ['Main'],
-					submenu: sortNoteItems,
-				}, {
-					label: Setting.settingMetadata('folders.sortOrder.field').label(),
-					screens: ['Main'],
-					submenu: sortFolderItems,
-				}, {
-					label: Setting.settingMetadata('showNoteCounts').label(),
-					type: 'checkbox',
-					checked: Setting.value('showNoteCounts'),
-					screens: ['Main'],
-					click: () => {
-						Setting.setValue('showNoteCounts', !Setting.value('showNoteCounts'));
-					},
-				}, {
-					label: Setting.settingMetadata('uncompletedTodosOnTop').label(),
-					type: 'checkbox',
-					checked: Setting.value('uncompletedTodosOnTop'),
-					screens: ['Main'],
-					click: () => {
-						Setting.setValue('uncompletedTodosOnTop', !Setting.value('uncompletedTodosOnTop'));
-					},
-				}, {
-					label: Setting.settingMetadata('showCompletedTodos').label(),
-					type: 'checkbox',
-					checked: Setting.value('showCompletedTodos'),
-					screens: ['Main'],
-					click: () => {
-						Setting.setValue('showCompletedTodos', !Setting.value('showCompletedTodos'));
-					},
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					label: _('Focus'),
-					screens: ['Main'],
-					submenu: focusItems,
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					label: _('Actual Size'),
-					click: () => {
-						Setting.setValue('windowContentZoomFactor', 100);
-					},
-					accelerator: 'CommandOrControl+0',
-				}, {
+					{
+						type: 'separator',
+						screens: ['Main'],
+					}, {
+						label: Setting.settingMetadata('notes.sortOrder.field').label(),
+						screens: ['Main'],
+						submenu: sortNoteItems,
+					}, {
+						label: Setting.settingMetadata('folders.sortOrder.field').label(),
+						screens: ['Main'],
+						submenu: sortFolderItems,
+					}, {
+						label: Setting.settingMetadata('showNoteCounts').label(),
+						type: 'checkbox',
+						checked: Setting.value('showNoteCounts'),
+						screens: ['Main'],
+						click: () => {
+							Setting.setValue('showNoteCounts', !Setting.value('showNoteCounts'));
+						},
+					}, {
+						label: Setting.settingMetadata('uncompletedTodosOnTop').label(),
+						type: 'checkbox',
+						checked: Setting.value('uncompletedTodosOnTop'),
+						screens: ['Main'],
+						click: () => {
+							Setting.setValue('uncompletedTodosOnTop', !Setting.value('uncompletedTodosOnTop'));
+						},
+					}, {
+						label: Setting.settingMetadata('showCompletedTodos').label(),
+						type: 'checkbox',
+						checked: Setting.value('showCompletedTodos'),
+						screens: ['Main'],
+						click: () => {
+							Setting.setValue('showCompletedTodos', !Setting.value('showCompletedTodos'));
+						},
+					}, {
+						type: 'separator',
+						screens: ['Main'],
+					}, {
+						label: _('Focus'),
+						screens: ['Main'],
+						submenu: focusItems,
+					}, {
+						type: 'separator',
+						screens: ['Main'],
+					}, {
+						label: _('Actual Size'),
+						click: () => {
+							Setting.setValue('windowContentZoomFactor', 100);
+						},
+						accelerator: 'CommandOrControl+0',
+					}, {
 					// There are 2 shortcuts for the action 'zoom in', mainly to increase the user experience.
 					// Most applications handle this the same way. These applications indicate Ctrl +, but actually mean Ctrl =.
 					// In fact they allow both: + and =. On the English keyboard layout - and = are used without the shift key.
 					// So to use Ctrl + would mean to use the shift key, but this is not the case in any of the apps that show Ctrl +.
 					// Additionally it allows the use of the plus key on the numpad.
-					label: _('Zoom In'),
-					click: () => {
-						Setting.incValue('windowContentZoomFactor', 10);
-					},
-					accelerator: 'CommandOrControl+Plus',
-				}, {
-					label: _('Zoom In'),
-					visible: false,
-					click: () => {
-						Setting.incValue('windowContentZoomFactor', 10);
-					},
-					accelerator: 'CommandOrControl+=',
-				}, {
-					label: _('Zoom Out'),
-					click: () => {
-						Setting.incValue('windowContentZoomFactor', -10);
-					},
-					accelerator: 'CommandOrControl+-',
-				}],
+						label: _('Zoom In'),
+						click: () => {
+							Setting.incValue('windowContentZoomFactor', 10);
+						},
+						accelerator: 'CommandOrControl+Plus',
+					}, {
+						label: _('Zoom In'),
+						visible: false,
+						click: () => {
+							Setting.incValue('windowContentZoomFactor', 10);
+						},
+						accelerator: 'CommandOrControl+=',
+					}, {
+						label: _('Zoom Out'),
+						click: () => {
+							Setting.incValue('windowContentZoomFactor', -10);
+						},
+						accelerator: 'CommandOrControl+-',
+					}],
 			},
 			note: {
 				label: _('&Note'),

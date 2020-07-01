@@ -19,5 +19,13 @@ export const runtime = (comp:any):CommandRuntime => {
 				bridge().showErrorMessageBox(error.message);
 			}
 		},
+		isEnabled: (props:any):boolean => {
+			return !!props.noteIds.length;
+		},
+		mapStateToProps: (state:any):any => {
+			return {
+				noteIds: state.selectedNoteIds,
+			};
+		},
 	};
 };
