@@ -4,9 +4,8 @@ const Note = require('lib/models/Note');
 const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
-	iconName: 'fa-file',
+	name: 'moveToFolder',
+	label: () => _('Move to notebook'),
 };
 
 export const runtime = (comp:any):CommandRuntime => {

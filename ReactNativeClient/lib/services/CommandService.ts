@@ -136,9 +136,14 @@ export default class CommandService extends BaseService {
 		// return command.runtime.isEnabled();
 	}
 
+	private toolbarExecuteArgs(command:Command, options:CommandToToolbarButtonOptions) {
+		if (options && ('executeArgs' in options)) return options.executeArgs;
+		if (command.runtime.props) return command.runtime.props;
+		return {};
+	}
+
 	commandToToolbarButton(commandName:string, options:CommandToToolbarButtonOptions = null) {
 		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
-		const executeArgs = (options && ('executeArgs' in options)) ? options.executeArgs : command.runtime.props;
 
 		return {
 			// title: command.declaration.label(),
@@ -146,7 +151,7 @@ export default class CommandService extends BaseService {
 			iconName: command.declaration.iconName,
 			enabled: command.runtime.isEnabled(command.runtime.props),
 			onClick: () => {
-				command.runtime.execute(executeArgs);
+				command.runtime.execute(this.toolbarExecuteArgs(command, options));
 			},
 		};
 	}

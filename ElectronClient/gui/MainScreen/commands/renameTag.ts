@@ -4,9 +4,8 @@ const { _ } = require('lib/locale');
 const { bridge } = require('electron').remote.require('./bridge');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
-	iconName: 'fa-file',
+	name: 'renameTag',
+	label: () => _('Rename'),
 };
 
 export const runtime = (comp:any):CommandRuntime => {

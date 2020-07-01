@@ -1,8 +1,10 @@
 import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
 const Note = require('lib/models/Note');
+const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
-	name: 'showNoteProperties',
+	name: 'showNoteContentProperties',
+	label: () => _('Statistics...'),
 };
 
 export const runtime = (comp:any):CommandRuntime => {

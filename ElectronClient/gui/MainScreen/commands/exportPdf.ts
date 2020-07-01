@@ -6,9 +6,8 @@ const { bridge } = require('electron').remote.require('./bridge');
 const InteropServiceHelper = require('../../../InteropServiceHelper.js');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
-	iconName: 'fa-file',
+	name: 'exportPdf',
+	label: () => `PDF - ${_('PDF File')}`,
 };
 
 export const runtime = (comp:any):CommandRuntime => {

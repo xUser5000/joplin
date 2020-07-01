@@ -2,9 +2,8 @@ import CommandService, { CommandRuntime, CommandDeclaration } from '../../../lib
 const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
-	iconName: 'fa-file',
+	name: 'selectTemplate',
+	// TODO: need to create createNoteFromTemplate, createTodoFromTemplate, insertTemplate
 };
 
 export const runtime = (comp:any):CommandRuntime => {

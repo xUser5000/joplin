@@ -3,8 +3,8 @@ const { _ } = require('lib/locale');
 const { bridge } = require('electron').remote.require('./bridge');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
+	name: 'print',
+	label: () => _('Print'),
 	iconName: 'fa-file',
 };
 

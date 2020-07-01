@@ -3,9 +3,9 @@ const Tag = require('lib/models/Tag');
 const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
-	iconName: 'fa-file',
+	name: 'setTags',
+	label: () => _('Tags'),
+	iconName: 'fa-tags',
 };
 
 export const runtime = (comp:any):CommandRuntime => {

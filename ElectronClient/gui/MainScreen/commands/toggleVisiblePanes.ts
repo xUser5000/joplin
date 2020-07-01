@@ -2,9 +2,9 @@ import { CommandDeclaration, CommandRuntime } from '../../../lib/services/Comman
 const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
-	name: 'toggleNoteList',
-	label: () => _('Toggle note list'),
-	iconName: 'fa-align-justify',
+	name: 'toggleVisiblePanes',
+	label: () => _('Toggle editor layout'),
+	iconName: 'fa-columns',
 };
 
 export const runtime = (comp:any):CommandRuntime => {

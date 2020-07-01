@@ -6,7 +6,7 @@ const { bridge } = require('electron').remote.require('./bridge');
 export const declaration:CommandDeclaration = {
 	name: 'newNotebook',
 	label: () => _('New notebook'),
-	iconName: 'fa-file',
+	iconName: 'fa-book',
 };
 
 export const runtime = (comp:any):CommandRuntime => {
@@ -38,6 +38,12 @@ export const runtime = (comp:any):CommandRuntime => {
 					},
 				},
 			});
+		},
+		mapStateToProps: (state:any):any => {
+			return {
+				selectedNoteIds: state.selectedNoteIds,
+				notes: state.notes,
+			};
 		},
 	};
 };

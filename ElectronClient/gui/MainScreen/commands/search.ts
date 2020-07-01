@@ -1,13 +1,11 @@
 import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
 const Note = require('lib/models/Note');
 const BaseModel = require('lib/BaseModel');
-const { _ } = require('lib/locale');
+// const { _ } = require('lib/locale');
 const { uuid } = require('lib/uuid.js');
 
 export const declaration:CommandDeclaration = {
-	name: 'newNote',
-	label: () => _('New note'),
-	iconName: 'fa-file',
+	name: 'search',
 };
 
 export const runtime = (comp:any):CommandRuntime => {
