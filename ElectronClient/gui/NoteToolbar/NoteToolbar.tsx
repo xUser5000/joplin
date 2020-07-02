@@ -38,8 +38,7 @@ function styles_(props:NoteToolbarProps) {
 }
 
 function useToolbarItems(props:NoteToolbarProps) {
-	const { note, folders, watchedNoteFiles, notesParentType, dispatch
-		, onButtonClick, backwardHistoryNotes, forwardHistoryNotes } = props;
+	const { note, folders, watchedNoteFiles, notesParentType, backwardHistoryNotes, forwardHistoryNotes } = props;
 
 	const toolbarItems = [];
 
@@ -83,43 +82,45 @@ function useToolbarItems(props:NoteToolbarProps) {
 		});
 	}
 
-	toolbarItems.push({
-		tooltip: _('Note properties'),
-		iconName: 'fa-info-circle',
-		onClick: () => {
-			dispatch({
-				type: 'WINDOW_COMMAND',
-				name: 'commandNoteProperties',
-				noteId: note.id,
-				onRevisionLinkClick: () => {
-					onButtonClick({ name: 'showRevisions' });
-				},
-			});
-		},
-	});
+	toolbarItems.push(CommandService.instance().commandToToolbarButton('showNoteProperties'));
+
+	// toolbarItems.push({
+	// 	tooltip: _('Note properties'),
+	// 	iconName: 'fa-info-circle',
+	// 	onClick: () => {
+	// 		dispatch({
+	// 			type: 'WINDOW_COMMAND',
+	// 			name: 'commandNoteProperties',
+	// 			noteId: note.id,
+	// 			onRevisionLinkClick: () => {
+	// 				onButtonClick({ name: 'showRevisions' });
+	// 			},
+	// 		});
+	// 	},
+	// });
 
 	if (watchedNoteFiles.indexOf(note.id) >= 0) {
-		toolbarItems.push({
-			tooltip: _('Click to stop external editing'),
-			title: _('Watching...'),
-			iconName: 'fa-share-square',
-			onClick: () => {
-				onButtonClick({ name: 'stopExternalEditing' });
-			},
-		});
+		toolbarItems.push(CommandService.instance().commandToToolbarButton('stopExternalEditing'));
+		// toolbarItems.push({
+		// 	tooltip: _('Click to stop external editing'),
+		// 	title: _('Watching...'),
+		// 	iconName: 'fa-share-square',
+		// 	onClick: () => {
+		// 		onButtonClick({ name: 'stopExternalEditing' });
+		// 	},
+		// });
 	} else {
-		toolbarItems.push({
-			tooltip: _('Edit in external editor'),
-			iconName: 'fa-share-square',
-			onClick: () => {
-				onButtonClick({ name: 'startExternalEditing' });
-			},
-		});
+		toolbarItems.push(CommandService.instance().commandToToolbarButton('startExternalEditing'));
+		// toolbarItems.push({
+		// 	tooltip: _('Edit in external editor'),
+		// 	iconName: 'fa-share-square',
+		// 	onClick: () => {
+		// 		onButtonClick({ name: 'startExternalEditing' });
+		// 	},
+		// });
 	}
 
-	toolbarItems.push(CommandService.instance().commandToToolbarButton('editAlarm', {
-		executeArgs: { noteId: note.id },
-	}));
+	toolbarItems.push(CommandService.instance().commandToToolbarButton('editAlarm'));
 
 	// if (note.is_todo) {
 	// 	const item:any = {
@@ -137,13 +138,15 @@ function useToolbarItems(props:NoteToolbarProps) {
 	// 	toolbarItems.push(item);
 	// }
 
-	toolbarItems.push({
-		tooltip: _('Tags'),
-		iconName: 'fa-tags',
-		onClick: () => {
-			onButtonClick({ name: 'setTags' });
-		},
-	});
+	toolbarItems.push(CommandService.instance().commandToToolbarButton('setTags'));
+
+	// toolbarItems.push({
+	// 	tooltip: _('Tags'),
+	// 	iconName: 'fa-tags',
+	// 	onClick: () => {
+	// 		onButtonClick({ name: 'setTags' });
+	// 	},
+	// });
 
 	return toolbarItems;
 }

@@ -5,17 +5,24 @@ const { time } = require('lib/time-utils.js');
 const { themeStyle } = require('lib/theme');
 const BaseModel = require('lib/BaseModel');
 const { _ } = require('lib/locale.js');
-const { bridge } = require('electron').remote.require('./bridge');
-const eventManager = require('../eventManager');
+const { bridge } = require('electron').remote.require('../bridge');
+const eventManager = require('../../eventManager');
 const SearchEngine = require('lib/services/SearchEngine');
 const Note = require('lib/models/Note');
 const Setting = require('lib/models/Setting');
-const NoteListUtils = require('./utils/NoteListUtils');
-const NoteListItem = require('./NoteListItem').default;
+const NoteListUtils = require('../utils/NoteListUtils');
+const NoteListItem = require('../NoteListItem').default;
+const CommandService = require('lib/services/CommandService.js').default;
+
+const commands = [
+	require('./commands/focusElementNoteList'),
+];
 
 class NoteListComponent extends React.Component {
 	constructor() {
 		super();
+
+		CommandService.instance().componentRegisterCommands(this, commands);
 
 		this.itemHeight = 34;
 
@@ -261,25 +268,26 @@ class NoteListComponent extends React.Component {
 	}
 
 	doCommand(command) {
-		if (!command) return;
+		throw new Error('Calling NoteList.doCommand');
+		// if (!command) return;
 
-		let commandProcessed = true;
+		// let commandProcessed = true;
 
-		if (command.name === 'focusElement' && command.target === 'noteList') {
-			if (this.props.selectedNoteIds.length) {
-				const ref = this.itemAnchorRef(this.props.selectedNoteIds[0]);
-				if (ref) ref.focus();
-			}
-		} else {
-			commandProcessed = false;
-		}
+		// if (command.name === 'focusElement' && command.target === 'noteList') {
+		// 	if (this.props.selectedNoteIds.length) {
+		// 		const ref = this.itemAnchorRef(this.props.selectedNoteIds[0]);
+		// 		if (ref) ref.focus();
+		// 	}
+		// } else {
+		// 	commandProcessed = false;
+		// }
 
-		if (commandProcessed) {
-			this.props.dispatch({
-				type: 'WINDOW_COMMAND',
-				name: null,
-			});
-		}
+		// if (commandProcessed) {
+		// 	this.props.dispatch({
+		// 		type: 'WINDOW_COMMAND',
+		// 		name: null,
+		// 	});
+		// }
 	}
 
 	componentDidUpdate(prevProps) {
@@ -387,17 +395,19 @@ class NoteListComponent extends React.Component {
 			event.preventDefault();
 
 			if (event.shiftKey) {
-				this.props.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'focusElement',
-					target: 'sideBar',
-				});
+				CommandService.instance().execute('focusElement', { target: 'sideBar' });
+				// this.props.dispatch({
+				// 	type: 'WINDOW_COMMAND',
+				// 	name: 'focusElement',
+				// 	target: 'sideBar',
+				// });
 			} else {
-				this.props.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'focusElement',
-					target: 'noteTitle',
-				});
+				CommandService.instance().execute('focusElement', { target: 'noteTitle' });
+				// this.props.dispatch({
+				// 	type: 'WINDOW_COMMAND',
+				// 	name: 'focusElement',
+				// 	target: 'noteTitle',
+				// });
 			}
 		}
 
@@ -435,6 +445,8 @@ class NoteListComponent extends React.Component {
 			clearInterval(this.focusItemIID_);
 			this.focusItemIID_ = null;
 		}
+
+		CommandService.instance().componentUnregisterCommands(commands);
 	}
 
 	render() {

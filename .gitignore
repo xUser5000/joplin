@@ -51,8 +51,10 @@ Tools/commit_hook.txt
 *.map
 
 # AUTO-GENERATED - EXCLUDED TYPESCRIPT BUILD
+ElectronClient/commands/focusElement.js
 ElectronClient/global.d.js
 ElectronClient/gui/ErrorBoundary.js
+ElectronClient/gui/Header/commands/focusSearch.js
 ElectronClient/gui/MainScreen/commands/editAlarm.js
 ElectronClient/gui/MainScreen/commands/exportPdf.js
 ElectronClient/gui/MainScreen/commands/hideModalMessage.js
@@ -75,6 +77,9 @@ ElectronClient/gui/MainScreen/commands/toggleSidebar.js
 ElectronClient/gui/MainScreen/commands/toggleVisiblePanes.js
 ElectronClient/gui/MultiNoteActions.js
 ElectronClient/gui/NoteContentPropertiesDialog.js
+ElectronClient/gui/NoteEditor/commands/editorCommandDeclarations.js
+ElectronClient/gui/NoteEditor/commands/startExternalEditing.js
+ElectronClient/gui/NoteEditor/commands/stopExternalEditing.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/AceEditor.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/styles/index.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/Toolbar.js
@@ -106,12 +111,15 @@ ElectronClient/gui/NoteEditor/utils/useMessageHandler.js
 ElectronClient/gui/NoteEditor/utils/useNoteSearchBar.js
 ElectronClient/gui/NoteEditor/utils/useSearchMarkers.js
 ElectronClient/gui/NoteEditor/utils/useWindowCommandHandler.js
+ElectronClient/gui/NoteList/commands/focusElementNoteList.js
 ElectronClient/gui/NoteListItem.js
 ElectronClient/gui/NoteToolbar/NoteToolbar.js
 ElectronClient/gui/ResourceScreen.js
 ElectronClient/gui/ShareNoteDialog.js
+ElectronClient/gui/SideBar/commands/focusElementSideBar.js
 ReactNativeClient/lib/AsyncActionQueue.js
 ReactNativeClient/lib/checkPermissions.js
+ReactNativeClient/lib/commands/synchronize.js
 ReactNativeClient/lib/hooks/useImperativeHandlerDebugger.js
 ReactNativeClient/lib/hooks/usePrevious.js
 ReactNativeClient/lib/joplin-renderer/MdToHtml/rules/checkbox.js

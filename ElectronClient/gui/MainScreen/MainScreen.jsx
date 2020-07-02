@@ -1,6 +1,6 @@
 const React = require('react');
 const { connect } = require('react-redux');
-const { Header } = require('../Header.min.js');
+const { Header } = require('../Header/Header.min.js');
 const { SideBar } = require('../SideBar.min.js');
 const { NoteList } = require('../NoteList.min.js');
 const NoteEditor = require('../NoteEditor/NoteEditor.js').default;
@@ -152,11 +152,6 @@ class MainScreenComponent extends React.Component {
 
 		let delayedFunction = null;
 		const delayedArgs = null;
-
-		// TODO: Set commands metadata
-		// TODO: Update toolbar icons
-		// TODO: update menu items
-		// TODO: search for each command to see how it's used
 
 		console.warn('MainScreen.doCommand', command);
 

@@ -122,6 +122,18 @@ export default class CommandService extends BaseService {
 		command.runtime = runtime;
 	}
 
+	componentRegisterCommands(component:any, commands:any[]) {
+		for (const command of commands) {
+			CommandService.instance().registerRuntime(command.declaration.name, command.runtime(component));
+		}
+	}
+
+	componentUnregisterCommands(commands:any[]) {
+		for (const command of commands) {
+			CommandService.instance().unregisterRuntime(command.declaration.name);
+		}
+	}
+
 	unregisterRuntime(commandName:string) {
 		const command = this.commandByName(commandName, { mustExist: false });
 		if (!command || !command.runtime) return; // throw new Error(`Trying to unregister a runtime that has not been registered: ${commandName}`);

@@ -3,6 +3,11 @@ const { connect } = require('react-redux');
 const { themeStyle } = require('lib/theme');
 const { _ } = require('lib/locale.js');
 const { bridge } = require('electron').remote.require('./bridge');
+const CommandService = require('lib/services/CommandService').default;
+
+const commands = [
+	require('./commands/focusSearch'),
+];
 
 class HeaderComponent extends React.Component {
 	constructor() {
@@ -12,6 +17,10 @@ class HeaderComponent extends React.Component {
 			showSearchUsageLink: false,
 			showButtonLabels: true,
 		};
+
+		for (const command of commands) {
+			CommandService.instance().registerRuntime(command.declaration.name, command.runtime(this));
+		}
 
 		this.scheduleSearchChangeEventIid_ = null;
 		this.searchOnQuery_ = null;
@@ -97,6 +106,10 @@ class HeaderComponent extends React.Component {
 			clearTimeout(this.hideSearchUsageLinkIID_);
 			this.hideSearchUsageLinkIID_ = null;
 		}
+
+		for (const command of commands) {
+			CommandService.instance().unregisterRuntime(command.declaration.name);
+		}
 	}
 
 	determineButtonLabelState() {
@@ -115,18 +128,20 @@ class HeaderComponent extends React.Component {
 
 		let commandProcessed = true;
 
-		if (command.name === 'focusSearch' && this.searchElement_) {
-			this.searchElement_.focus();
-		} else {
-			commandProcessed = false;
-		}
+		console.warn('Header.doCommand', command);
 
-		if (commandProcessed) {
-			this.props.dispatch({
-				type: 'WINDOW_COMMAND',
-				name: null,
-			});
-		}
+		// if (command.name === 'focusSearch' && this.searchElement_) {
+		// 	this.searchElement_.focus();
+		// } else {
+		// 	commandProcessed = false;
+		// }
+
+		// if (commandProcessed) {
+		// 	this.props.dispatch({
+		// 		type: 'WINDOW_COMMAND',
+		// 		name: null,
+		// 	});
+		// }
 	}
 
 	back_click() {

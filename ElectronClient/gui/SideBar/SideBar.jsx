@@ -10,16 +10,22 @@ const Note = require('lib/models/Note.js');
 const Tag = require('lib/models/Tag.js');
 const { _ } = require('lib/locale.js');
 const { themeStyle } = require('lib/theme');
-const { bridge } = require('electron').remote.require('./bridge');
+const { bridge } = require('electron').remote.require('../bridge');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
-const InteropServiceHelper = require('../InteropServiceHelper.js');
+const InteropServiceHelper = require('../../InteropServiceHelper.js');
 const { substrWithEllipsis } = require('lib/string-utils');
 const { ALL_NOTES_FILTER_ID } = require('lib/reserved-ids');
+
+const commands = [
+	require('./commands/focusElementSideBar'),
+];
 
 class SideBarComponent extends React.Component {
 	constructor() {
 		super();
+
+		CommandService.instance().componentRegisterCommands(this, commands);
 
 		this.onFolderDragStart_ = event => {
 			const folderId = event.currentTarget.getAttribute('folderid');
@@ -219,23 +225,25 @@ class SideBarComponent extends React.Component {
 
 		let commandProcessed = true;
 
-		if (command.name === 'focusElement' && command.target === 'sideBar') {
-			if (this.props.sidebarVisibility) {
-				const item = this.selectedItem();
-				if (item) {
-					const anchorRef = this.anchorItemRefs[item.type][item.id];
-					if (anchorRef) anchorRef.current.focus();
-				} else {
-					const anchorRef = this.firstAnchorItemRef('folder');
-					console.info('anchorRef', anchorRef);
-					if (anchorRef) anchorRef.current.focus();
-				}
-			}
-		} else if (command.name === 'synchronize') {
-			if (!this.props.syncStarted) this.sync_click();
-		} else {
-			commandProcessed = false;
-		}
+		throw new Error('Called SideBar.doCommand');
+
+		// if (command.name === 'focusElement' && command.target === 'sideBar') {
+		// 	if (this.props.sidebarVisibility) {
+		// 		const item = this.selectedItem();
+		// 		if (item) {
+		// 			const anchorRef = this.anchorItemRefs[item.type][item.id];
+		// 			if (anchorRef) anchorRef.current.focus();
+		// 		} else {
+		// 			const anchorRef = this.firstAnchorItemRef('folder');
+		// 			console.info('anchorRef', anchorRef);
+		// 			if (anchorRef) anchorRef.current.focus();
+		// 		}
+		// 	}
+		// } else if (command.name === 'synchronize') {
+		// 	if (!this.props.syncStarted) this.sync_click();
+		// } else {
+		// 	commandProcessed = false;
+		// }
 
 		if (commandProcessed) {
 			this.props.dispatch({
@@ -247,6 +255,8 @@ class SideBarComponent extends React.Component {
 
 	componentWillUnmount() {
 		this.clearForceUpdateDuringSync();
+
+		CommandService.instance().componentUnregisterCommands(commands);
 	}
 
 	componentDidUpdate(prevProps) {
@@ -416,9 +426,9 @@ class SideBarComponent extends React.Component {
 		});
 	}
 
-	async sync_click() {
-		await shared.synchronize_press(this);
-	}
+	// async sync_click() {
+	// 	await shared.synchronize_press(this);
+	// }
 
 	anchorItemRef(type, id) {
 		if (!this.anchorItemRefs[type]) this.anchorItemRefs[type] = {};
@@ -654,17 +664,19 @@ class SideBarComponent extends React.Component {
 			event.preventDefault();
 
 			if (event.shiftKey) {
-				this.props.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'focusElement',
-					target: 'noteBody',
-				});
+				CommandService.instance().execute('focusElement', { target: 'noteBody' });
+				// this.props.dispatch({
+				// 	type: 'WINDOW_COMMAND',
+				// 	name: 'focusElement',
+				// 	target: 'noteBody',
+				// });
 			} else {
-				this.props.dispatch({
-					type: 'WINDOW_COMMAND',
-					name: 'focusElement',
-					target: 'noteList',
-				});
+				CommandService.instance().execute('focusElement', { target: 'noteList' });
+				// this.props.dispatch({
+				// 	type: 'WINDOW_COMMAND',
+				// 	name: 'focusElement',
+				// 	target: 'noteList',
+				// });
 			}
 		}
 
@@ -720,7 +732,8 @@ class SideBarComponent extends React.Component {
 				href="#"
 				key="sync_button"
 				onClick={() => {
-					this.sync_click();
+					CommandService.instance().execute('synchronize');
+					//this.sync_click();
 				}}
 			>
 				{icon}

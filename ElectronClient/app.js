@@ -55,7 +55,16 @@ const commands = [
 	require('./gui/MainScreen/commands/toggleNoteList'),
 	require('./gui/MainScreen/commands/toggleSidebar'),
 	require('./gui/MainScreen/commands/toggleVisiblePanes'),
+	require('./gui/Header/commands/focusSearch'),
+	require('./gui/NoteEditor/commands/startExternalEditing'),
+	require('./gui/NoteEditor/commands/stopExternalEditing'),
 ];
+
+const globalCommands = [
+	require('lib/commands/synchronize'),
+];
+
+const editorCommandDeclarations = require('./gui/NoteEditor/commands/editorCommandDeclarations');
 
 const pluginClasses = [
 	require('./plugins/GotoAnything.min'),
@@ -863,18 +872,26 @@ class Application extends BaseApplication {
 				}, {
 					type: 'separator',
 					screens: ['Main'],
-				}, {
-					id: 'edit:focusSearch',
-					label: _('Search in all the notes'),
-					screens: ['Main'],
-					accelerator: shim.isMac() ? 'Shift+Command+F' : 'F6',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'focusSearch',
-						});
-					},
-				}, {
+				},
+
+				cmdService.commandToMenuItem('focusSearch', shim.isMac() ? 'Shift+Command+F' : 'F6'),
+
+				// {
+				// 	id: 'edit:focusSearch',
+				// 	label: _('Search in all the notes'),
+				// 	screens: ['Main'],
+				// 	accelerator: shim.isMac() ? 'Shift+Command+F' : 'F6',
+				// 	click: () => {
+				// 		this.dispatch({
+				// 			type: 'WINDOW_COMMAND',
+				// 			name: 'focusSearch',
+				// 		});
+				// 	},
+				// },
+
+
+
+				{
 					id: 'edit:showLocalSearch',
 					label: _('Search in current note'),
 					screens: ['Main'],
@@ -1337,6 +1354,15 @@ class Application extends BaseApplication {
 
 		for (const command of commands) {
 			CommandService.instance().registerDeclaration(command.declaration);
+		}
+
+		for (const command of globalCommands) {
+			CommandService.instance().registerDeclaration(command.declaration);
+			CommandService.instance().registerRuntime(command.declaration.name, command.runtime());
+		}
+
+		for (const declaration of editorCommandDeclarations) {
+			CommandService.instance().registerDeclaration(declaration);
 		}
 
 		this.updateMenu('Main');

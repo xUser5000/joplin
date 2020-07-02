@@ -51,14 +51,14 @@ export const runtime = (comp:any):CommandRuntime => {
 			});
 		},
 		isEnabled: (props:any):boolean => {
-			const { notes, selectedNoteIds } = props;
-			if (!selectedNoteIds || selectedNoteIds.length !== 1) return false;
-			const note = BaseModel.byId(notes, selectedNoteIds[0]);
+			const { notes, noteId } = props;
+			if (!noteId) return false;
+			const note = BaseModel.byId(notes, noteId);
 			return !!note.is_todo && !note.todo_completed;
 		},
 		mapStateToProps: (state:any):any => {
 			return {
-				selectedNoteIds: state.selectedNoteIds,
+				noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null,
 				notes: state.notes,
 			};
 		},
