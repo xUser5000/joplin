@@ -141,6 +141,8 @@ export default class CommandService extends BaseService {
 	}
 
 	execute(commandName:string, args:any = null) {
+		console.info('CommandService::execute:', commandName, args);
+
 		const command = this.commandByName(commandName);
 		// if (!command.runtime.isEnabled()) return;
 		command.runtime.execute(args ? args : {});
@@ -166,7 +168,8 @@ export default class CommandService extends BaseService {
 			iconName: command.declaration.iconName,
 			enabled: this.isEnabled(commandName),
 			onClick: () => {
-				command.runtime.execute(this.extractExecuteArgs(command, options));
+				this.execute(commandName, this.extractExecuteArgs(command, options));
+				// command.runtime.execute(this.extractExecuteArgs(command, options));
 			},
 		};
 	}
@@ -178,7 +181,7 @@ export default class CommandService extends BaseService {
 			id: command.declaration.name,
 			label: command.declaration.label(),
 			click: () => {
-				command.runtime.execute(this.extractExecuteArgs(command, options));
+				this.execute(commandName, this.extractExecuteArgs(command, options));
 			},
 		};
 

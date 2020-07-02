@@ -88,6 +88,9 @@ ElectronClient/gui/MainScreen/commands/toggleVisiblePanes.js
 ElectronClient/gui/MultiNoteActions.js
 ElectronClient/gui/NoteContentPropertiesDialog.js
 ElectronClient/gui/NoteEditor/commands/editorCommandDeclarations.js
+ElectronClient/gui/NoteEditor/commands/focusElementNoteBody.js
+ElectronClient/gui/NoteEditor/commands/focusElementNoteTitle.js
+ElectronClient/gui/NoteEditor/commands/showLocalSearch.js
 ElectronClient/gui/NoteEditor/commands/startExternalEditing.js
 ElectronClient/gui/NoteEditor/commands/stopExternalEditing.js
 ElectronClient/gui/NoteEditor/NoteBody/AceEditor/AceEditor.js

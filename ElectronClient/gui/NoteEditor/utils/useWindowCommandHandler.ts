@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
-import { FormNote, EditorCommand } from './types';
+import { FormNote } from './types';
 import editorCommandDeclarations from '../commands/editorCommandDeclarations';
 import CommandService, { CommandDeclaration,  CommandRuntime } from '../../../lib/services/CommandService';
 const { time } = require('lib/time-utils.js');
 const { reg } = require('lib/registry.js');
-const TemplateUtils = require('lib/TemplateUtils');
 
 const commandsWithDependencies = [
 	require('../commands/startExternalEditing'),
 	require('../commands/stopExternalEditing'),
+	require('../commands/showLocalSearch'),
 ];
 
 interface HookDependencies {
@@ -65,7 +65,11 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 	useEffect(() => {
 		const dependencies = {
 			formNote,
+			editorRef,
 			saveNoteAndWait,
+			setShowLocalSearch,
+			noteSearchBarRef,
+			titleInputRef,
 		};
 
 		for (const command of commandsWithDependencies) {
@@ -81,95 +85,78 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 
 	useEffect(() => {
 		async function processCommand() {
-			const command = windowCommand;
+			if (!windowCommand) return;
 
-			if (!command || !formNote) return;
+			throw new Error(`Calling NoteEditor::useWindowCommandHandler:${windowCommand.name}`);
 
-			reg.logger().debug('NoteEditor::useWindowCommandHandler:', command);
+			// const command = windowCommand;
 
-			const editorCmd: EditorCommand = { name: '', value: command.value };
-			let fn: Function = null;
+			// if (!command || !formNote) return;
 
-			// These commands can be forwarded directly to the note body editor
-			// without transformation.
-			const directMapCommands = [
-				'textCode',
-				'textBold',
-				'textItalic',
-				'textLink',
-				'attachFile',
-				'textNumberedList',
-				'textBulletedList',
-				'textCheckbox',
-				'textHeading',
-				'textHorizontalRule',
-			];
+			// reg.logger().warn('NoteEditor::useWindowCommandHandler:', command);
 
-			if (directMapCommands.includes(command.name)) {
-				CommandService.instance().execute(command.name, { value: command.value });
-				dispatch({
-					type: 'WINDOW_COMMAND',
-					name: null,
-				});
-				return;
-				// editorCmd.name = command.name;
-			// } else if (command.name === 'commandStartExternalEditing') {
-			// 	fn = async () => {
-			// 		await saveNoteAndWait(formNote);
-			// 		NoteListUtils.startExternalEditing(formNote.id);
-			// 	};
-			// } else if (command.name === 'commandStopExternalEditing') {
-			// 	fn = () => {
-			// 		NoteListUtils.stopExternalEditing(formNote.id);
-			// 	};
-			// } else if (command.name === 'insertDateTime') {
-			// 	editorCmd.name = 'insertText',
-			// 	editorCmd.value = time.formatMsToLocal(new Date().getTime());
-			} else if (command.name === 'showLocalSearch') {
-				if (editorRef.current && editorRef.current.supportsCommand('search')) {
-					editorCmd.name = 'search';
-				} else {
-					fn = () => {
-						setShowLocalSearch(true);
-						if (noteSearchBarRef.current) noteSearchBarRef.current.wrappedInstance.focus();
-					};
-				}
-			} else if (command.name === 'insertTemplate') {
-				editorCmd.name = 'insertText';
-				editorCmd.value = TemplateUtils.render(command.value);
-			}
+			// const editorCmd: EditorCommand = { name: '', value: command.value };
+			// let fn: Function = null;
 
-			if (command.name === 'focusElement' && command.target === 'noteTitle') {
-				fn = () => {
-					if (!titleInputRef.current) return;
-					titleInputRef.current.focus();
-				};
-			}
+			// // These commands can be forwarded directly to the note body editor
+			// // without transformation.
+			// const directMapCommands = [
+			// 	'textCode',
+			// 	'textBold',
+			// 	'textItalic',
+			// 	'textLink',
+			// 	'attachFile',
+			// 	'textNumberedList',
+			// 	'textBulletedList',
+			// 	'textCheckbox',
+			// 	'textHeading',
+			// 	'textHorizontalRule',
+			// ];
 
-			if (command.name === 'focusElement' && command.target === 'noteBody') {
-				editorCmd.name = 'focus';
-			}
+			// if (directMapCommands.includes(command.name)) {
+			// 	CommandService.instance().execute(command.name, { value: command.value });
+			// 	dispatch({
+			// 		type: 'WINDOW_COMMAND',
+			// 		name: null,
+			// 	});
+			// 	return;
 
-			reg.logger().debug('NoteEditor::useWindowCommandHandler: Dispatch:', editorCmd, fn);
+			// } else if (command.name === 'insertTemplate') {
+			// 	editorCmd.name = 'insertText';
+			// 	editorCmd.value = TemplateUtils.render(command.value);
+			// }
 
-			if (!editorCmd.name && !fn) return;
+			// // if (command.name === 'focusElement' && command.target === 'noteTitle') {
+			// // 	fn = () => {
+			// // 		if (!titleInputRef.current) return;
+			// // 		titleInputRef.current.focus();
+			// // 	};
+			// // }
 
-			dispatch({
-				type: 'WINDOW_COMMAND',
-				name: null,
-			});
+			// // if (command.name === 'focusElement' && command.target === 'noteBody') {
+			// // 	editorCmd.name = 'focus';
+			// // }
 
-			requestAnimationFrame(() => {
-				if (fn) {
-					fn();
-				} else {
-					if (!editorRef.current.execCommand) {
-						reg.logger().warn('Received command, but editor cannot execute commands', editorCmd);
-					} else {
-						editorRef.current.execCommand(editorCmd);
-					}
-				}
-			});
+			// reg.logger().debug('NoteEditor::useWindowCommandHandler: Dispatch:', editorCmd, fn);
+
+			// if (!editorCmd.name && !fn) return;
+
+			// dispatch({
+			// 	type: 'WINDOW_COMMAND',
+			// 	name: null,
+			// });
+
+			// requestAnimationFrame(() => {
+			// 	if (fn) {
+			// 		fn();
+			// 	} else {
+			// 		if (!editorRef.current.execCommand) {
+			// 			reg.logger().warn('Received command, but editor cannot execute commands', editorCmd);
+			// 		} else {
+			// 			editorRef.current.execCommand(editorCmd);
+			// 		}
+			// 	}
+			// });
 		}
 
 		processCommand();

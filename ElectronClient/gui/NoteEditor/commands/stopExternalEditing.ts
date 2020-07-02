@@ -4,8 +4,8 @@ const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
 	name: 'stopExternalEditing',
-	label: () => _('Watching...'),
-	iconName: 'fa-share-square',
+	label: () => _('Stop external editing'),
+	iconName: 'fa-stop',
 };
 
 export const runtime = (comp:any):CommandRuntime => {

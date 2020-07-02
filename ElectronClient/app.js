@@ -58,13 +58,14 @@ const commands = [
 	require('./gui/Header/commands/focusSearch'),
 	require('./gui/NoteEditor/commands/startExternalEditing'),
 	require('./gui/NoteEditor/commands/stopExternalEditing'),
+	require('./gui/NoteEditor/commands/showLocalSearch'),
 ];
 
 const globalCommands = [
 	require('lib/commands/synchronize'),
 ];
 
-const editorCommandDeclarations = require('./gui/NoteEditor/commands/editorCommandDeclarations');
+const editorCommandDeclarations = require('./gui/NoteEditor/commands/editorCommandDeclarations').default;
 
 const pluginClasses = [
 	require('./plugins/GotoAnything.min'),
@@ -889,20 +890,23 @@ class Application extends BaseApplication {
 				// 	},
 				// },
 
+				cmdService.commandToMenuItem('showLocalSearch', 'CommandOrControl+F'),
+
+					// {
+					// 	id: 'edit:showLocalSearch',
+					// 	label: _('Search in current note'),
+					// 	screens: ['Main'],
+					// 	accelerator: 'CommandOrControl+F',
+					// 	click: () => {
+					// 		this.dispatch({
+					// 			type: 'WINDOW_COMMAND',
+					// 			name: 'showLocalSearch',
+					// 		});
+					// 	},
+					// }
 
 
-				{
-					id: 'edit:showLocalSearch',
-					label: _('Search in current note'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+F',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'showLocalSearch',
-						});
-					},
-				}],
+				],
 			},
 			view: {
 				label: _('&View'),
