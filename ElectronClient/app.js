@@ -5,9 +5,7 @@ const { FoldersScreenUtils } = require('lib/folders-screen-utils.js');
 const Setting = require('lib/models/Setting.js');
 const { shim } = require('lib/shim.js');
 const MasterKey = require('lib/models/MasterKey');
-const Note = require('lib/models/Note');
 const Folder = require('lib/models/Folder');
-const { MarkupToHtml } = require('lib/joplin-renderer');
 const { _, setLocale } = require('lib/locale.js');
 const { Logger } = require('lib/logger.js');
 const fs = require('fs-extra');
@@ -59,6 +57,11 @@ const commands = [
 	require('./gui/NoteEditor/commands/startExternalEditing'),
 	require('./gui/NoteEditor/commands/stopExternalEditing'),
 	require('./gui/NoteEditor/commands/showLocalSearch'),
+	require('./gui/SideBar/commands/focusElementSideBar'),
+	require('./gui/NoteList/commands/focusElementNoteList'),
+	require('./gui/NoteEditor/commands/focusElementNoteTitle'),
+	require('./gui/NoteEditor/commands/focusElementNoteBody'),
+	require('./commands/focusElement'),
 ];
 
 const globalCommands = [
@@ -96,6 +99,14 @@ class Application extends BaseApplication {
 		this.lastMenuScreen_ = null;
 
 		this.bridge_nativeThemeUpdated = this.bridge_nativeThemeUpdated.bind(this);
+
+		this.commandService_commandsEnabledStateChange = this.commandService_commandsEnabledStateChange.bind(this);
+		CommandService.instance().on('commandsEnabledStateChange', this.commandService_commandsEnabledStateChange);
+	}
+
+	commandService_commandsEnabledStateChange() {
+		// TODO: only update if command is used in menu?
+		this.updateMenuItemStates();
 	}
 
 	hasGui() {
@@ -373,13 +384,13 @@ class Application extends BaseApplication {
 		await this.updateMenu(screen);
 	}
 
-	focusElement_(target) {
-		this.dispatch({
-			type: 'WINDOW_COMMAND',
-			name: 'focusElement',
-			target: target,
-		});
-	}
+	// focusElement_(target) {
+	// 	this.dispatch({
+	// 		type: 'WINDOW_COMMAND',
+	// 		name: 'focusElement',
+	// 		target: target,
+	// 	});
+	// }
 
 	async updateMenu(screen) {
 		if (this.lastMenuScreen_ === screen) return;
@@ -422,31 +433,12 @@ class Application extends BaseApplication {
 		const sortNoteItems = sortNoteFolderItems('notes');
 		const sortFolderItems = sortNoteFolderItems('folders');
 
-		const focusItems = [];
-
-		focusItems.push({
-			label: _('Sidebar'),
-			click: () => { this.focusElement_('sideBar'); },
-			accelerator: 'CommandOrControl+Shift+S',
-		});
-
-		focusItems.push({
-			label: _('Note list'),
-			click: () => { this.focusElement_('noteList'); },
-			accelerator: 'CommandOrControl+Shift+L',
-		});
-
-		focusItems.push({
-			label: _('Note title'),
-			click: () => { this.focusElement_('noteTitle'); },
-			accelerator: 'CommandOrControl+Shift+N',
-		});
-
-		focusItems.push({
-			label: _('Note body'),
-			click: () => { this.focusElement_('noteBody'); },
-			accelerator: 'CommandOrControl+Shift+B',
-		});
+		const focusItems = [
+			cmdService.commandToMenuItem('focusElementSideBar', 'CommandOrControl+Shift+S'),
+			cmdService.commandToMenuItem('focusElementNoteList', 'CommandOrControl+Shift+L'),
+			cmdService.commandToMenuItem('focusElementNoteTitle', 'CommandOrControl+Shift+N'),
+			cmdService.commandToMenuItem('focusElementNoteBody', 'CommandOrControl+Shift+B'),
+		];
 
 		let toolsItems = [];
 		const importItems = [];
@@ -714,17 +706,11 @@ class Application extends BaseApplication {
 				submenu: exportItems,
 			}, {
 				type: 'separator',
-			}, {
-				label: _('Synchronise'),
-				accelerator: 'CommandOrControl+S',
-				screens: ['Main'],
-				click: async () => {
-					this.dispatch({
-						type: 'WINDOW_COMMAND',
-						name: 'synchronize',
-					});
-				},
-			}, shim.isMac() ? syncStatusItem : noItem, {
+			},
+
+			cmdService.commandToMenuItem('synchronize', 'CommandOrControl+S'),
+
+			shim.isMac() ? syncStatusItem : noItem, {
 				type: 'separator',
 			}, shim.isMac() ? noItem : printItem, {
 				type: 'separator',
@@ -789,123 +775,51 @@ class Application extends BaseApplication {
 			edit: {
 				id: 'edit',
 				label: _('&Edit'),
-				submenu: [{
-					id: 'edit:copy',
-					label: _('Copy'),
-					role: 'copy',
-					accelerator: 'CommandOrControl+C',
-				}, {
-					id: 'edit:cut',
-					label: _('Cut'),
-					role: 'cut',
-					accelerator: 'CommandOrControl+X',
-				}, {
-					id: 'edit:paste',
-					label: _('Paste'),
-					role: 'paste',
-					accelerator: 'CommandOrControl+V',
-				}, {
-					id: 'edit:selectAll',
-					label: _('Select all'),
-					role: 'selectall',
-					accelerator: 'CommandOrControl+A',
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					id: 'edit:bold',
-					label: _('Bold'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+B',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'textBold',
-						});
+				submenu: [
+					{
+						id: 'edit:copy',
+						label: _('Copy'),
+						role: 'copy',
+						accelerator: 'CommandOrControl+C',
+					}, {
+						id: 'edit:cut',
+						label: _('Cut'),
+						role: 'cut',
+						accelerator: 'CommandOrControl+X',
+					}, {
+						id: 'edit:paste',
+						label: _('Paste'),
+						role: 'paste',
+						accelerator: 'CommandOrControl+V',
+					}, {
+						id: 'edit:selectAll',
+						label: _('Select all'),
+						role: 'selectall',
+						accelerator: 'CommandOrControl+A',
+					}, {
+						type: 'separator',
+						screens: ['Main'],
 					},
-				}, {
-					id: 'edit:italic',
-					label: _('Italic'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+I',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'textItalic',
-						});
+
+					cmdService.commandToMenuItem('textBold', 'CommandOrControl+B'),
+					cmdService.commandToMenuItem('textItalic', 'CommandOrControl+I'),
+					cmdService.commandToMenuItem('textLink', 'CommandOrControl+K'),
+					cmdService.commandToMenuItem('textCode', 'CommandOrControl+`'),
+
+					{
+						type: 'separator',
+						screens: ['Main'],
 					},
-				}, {
-					id: 'edit:link',
-					label: _('Link'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+K',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'textLink',
-						});
+
+					cmdService.commandToMenuItem('insertDateTime', 'CommandOrControl+Shift+T'),
+
+					{
+						type: 'separator',
+						screens: ['Main'],
 					},
-				}, {
-					id: 'edit:code',
-					label: _('Code'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+`',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'textCode',
-						});
-					},
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					id: 'edit:insertDateTime',
-					label: _('Insert Date Time'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+Shift+T',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'insertDateTime',
-						});
-					},
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				},
 
-				cmdService.commandToMenuItem('focusSearch', shim.isMac() ? 'Shift+Command+F' : 'F6'),
-
-				// {
-				// 	id: 'edit:focusSearch',
-				// 	label: _('Search in all the notes'),
-				// 	screens: ['Main'],
-				// 	accelerator: shim.isMac() ? 'Shift+Command+F' : 'F6',
-				// 	click: () => {
-				// 		this.dispatch({
-				// 			type: 'WINDOW_COMMAND',
-				// 			name: 'focusSearch',
-				// 		});
-				// 	},
-				// },
-
-				cmdService.commandToMenuItem('showLocalSearch', 'CommandOrControl+F'),
-
-					// {
-					// 	id: 'edit:showLocalSearch',
-					// 	label: _('Search in current note'),
-					// 	screens: ['Main'],
-					// 	accelerator: 'CommandOrControl+F',
-					// 	click: () => {
-					// 		this.dispatch({
-					// 			type: 'WINDOW_COMMAND',
-					// 			name: 'showLocalSearch',
-					// 		});
-					// 	},
-					// }
-
-
+					cmdService.commandToMenuItem('focusSearch', shim.isMac() ? 'Shift+Command+F' : 'F6'),
+					cmdService.commandToMenuItem('showLocalSearch', 'CommandOrControl+F'),
 				],
 			},
 			view: {
@@ -1005,43 +919,18 @@ class Application extends BaseApplication {
 			},
 			note: {
 				label: _('&Note'),
-				submenu: [{
-					id: 'edit:commandStartExternalEditing',
-					label: _('Edit in external editor'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+E',
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'commandStartExternalEditing',
-						});
+				submenu: [
+
+					CommandService.instance().commandToMenuItem('startExternalEditing', 'CommandOrControl+E'),
+					CommandService.instance().commandToMenuItem('setTags', 'CommandOrControl+Alt+T'),
+
+					{
+						type: 'separator',
+						screens: ['Main'],
 					},
-				}, {
-					id: 'edit:setTags',
-					label: _('Tags'),
-					screens: ['Main'],
-					accelerator: 'CommandOrControl+Alt+T',
-					click: () => {
-						const selectedNoteIds = this.store().getState().selectedNoteIds;
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'setTags',
-							noteIds: selectedNoteIds,
-						});
-					},
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
-					id: 'note:statistics',
-					label: _('Statistics...'),
-					click: () => {
-						this.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'commandContentProperties',
-						});
-					},
-				}],
+
+					CommandService.instance().commandToMenuItem('showNoteContentProperties'),
+				],
 			},
 			tools: {
 				label: _('&Tools'),
@@ -1192,49 +1081,49 @@ class Application extends BaseApplication {
 			menuItem.enabled = menuEnabledState[itemId];
 		}
 
-		const selectedNoteIds = state.selectedNoteIds;
-		const note = selectedNoteIds.length === 1 ? await Note.load(selectedNoteIds[0]) : null;
-		const aceEditorViewerOnly = state.settings['editor.codeView'] && state.noteVisiblePanes.length === 1 && state.noteVisiblePanes[0] === 'viewer';
+		// const selectedNoteIds = state.selectedNoteIds;
+		// const note = selectedNoteIds.length === 1 ? await Note.load(selectedNoteIds[0]) : null;
+		// const aceEditorViewerOnly = state.settings['editor.codeView'] && state.noteVisiblePanes.length === 1 && state.noteVisiblePanes[0] === 'viewer';
 
-		// Only enabled when there's only one active note, and that note
-		// is a Markdown note (markup_language = MARKDOWN), and the
-		// editor is in edit mode (not viewer-only mode).
-		const singleMarkdownNoteMenuItems = [
-			'edit:bold',
-			'edit:italic',
-			'edit:link',
-			'edit:code',
-			'edit:insertDateTime',
-		];
+		// // Only enabled when there's only one active note, and that note
+		// // is a Markdown note (markup_language = MARKDOWN), and the
+		// // editor is in edit mode (not viewer-only mode).
+		// const singleMarkdownNoteMenuItems = [
+		// 	'edit:bold',
+		// 	'edit:italic',
+		// 	'edit:link',
+		// 	'edit:code',
+		// 	'edit:insertDateTime',
+		// ];
 
-		// Only enabled when there's only one active note.
-		const singleNoteMenuItems = [
-			'edit:copy',
-			'edit:paste',
-			'edit:cut',
-			'edit:selectAll',
-			'edit:showLocalSearch',
-			'edit:commandStartExternalEditing',
-			'note:statistics',
-		];
+		// // Only enabled when there's only one active note.
+		// const singleNoteMenuItems = [
+		// 	'edit:copy',
+		// 	'edit:paste',
+		// 	'edit:cut',
+		// 	'edit:selectAll',
+		// 	'edit:showLocalSearch',
+		// 	'edit:commandStartExternalEditing',
+		// 	'note:statistics',
+		// ];
 
-		for (const itemId of singleMarkdownNoteMenuItems) {
-			const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
-			if (!menuItem) continue;
-			menuItem.enabled = !aceEditorViewerOnly && !!note && note.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
-		}
+		// for (const itemId of singleMarkdownNoteMenuItems) {
+		// 	const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
+		// 	if (!menuItem) continue;
+		// 	menuItem.enabled = !aceEditorViewerOnly && !!note && note.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
+		// }
 
-		for (const itemId of singleNoteMenuItems) {
-			const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
-			if (!menuItem) continue;
-			menuItem.enabled = selectedNoteIds.length === 1;
-		}
+		// for (const itemId of singleNoteMenuItems) {
+		// 	const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
+		// 	if (!menuItem) continue;
+		// 	menuItem.enabled = selectedNoteIds.length === 1;
+		// }
 
-		const sortNoteReverseItem = Menu.getApplicationMenu().getMenuItemById('sort:notes:reverse');
-		sortNoteReverseItem.enabled = state.settings['notes.sortOrder.field'] !== 'order';
+		// const sortNoteReverseItem = Menu.getApplicationMenu().getMenuItemById('sort:notes:reverse');
+		// sortNoteReverseItem.enabled = state.settings['notes.sortOrder.field'] !== 'order';
 
-		const menuItem = Menu.getApplicationMenu().getMenuItemById('help:toggleDevTools');
-		menuItem.checked = state.devToolsVisible;
+		// const menuItem = Menu.getApplicationMenu().getMenuItemById('help:toggleDevTools');
+		// menuItem.checked = state.devToolsVisible;
 	}
 
 	bridge_nativeThemeUpdated() {

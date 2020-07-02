@@ -337,7 +337,19 @@
 			"ElectronClient/gui/MainScreen/commands/showShareNoteDialog.js": true,
 			"ElectronClient/gui/MainScreen/commands/toggleNoteList.js": true,
 			"ElectronClient/gui/MainScreen/commands/toggleSidebar.js": true,
-			"ElectronClient/gui/MainScreen/commands/toggleVisiblePanes.js": true
+			"ElectronClient/gui/MainScreen/commands/toggleVisiblePanes.js": true,
+			"./ElectronClient/**/*.min.js": true,
+			"ElectronClient/commands/focusElement.js": true,
+			"ElectronClient/gui/Header/commands/focusSearch.js": true,
+			"ElectronClient/gui/NoteEditor/commands/editorCommandDeclarations.js": true,
+			"ElectronClient/gui/NoteEditor/commands/focusElementNoteBody.js": true,
+			"ElectronClient/gui/NoteEditor/commands/focusElementNoteTitle.js": true,
+			"ElectronClient/gui/NoteEditor/commands/showLocalSearch.js": true,
+			"ElectronClient/gui/NoteEditor/commands/startExternalEditing.js": true,
+			"ElectronClient/gui/NoteEditor/commands/stopExternalEditing.js": true,
+			"ElectronClient/gui/NoteList/commands/focusElementNoteList.js": true,
+			"ElectronClient/gui/SideBar/commands/focusElementSideBar.js": true,
+			"ReactNativeClient/lib/commands/synchronize.js": true
 		},
 		"spellright.language": [
 			"en"

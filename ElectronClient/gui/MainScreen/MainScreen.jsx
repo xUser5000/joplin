@@ -1,8 +1,8 @@
 const React = require('react');
 const { connect } = require('react-redux');
 const { Header } = require('../Header/Header.min.js');
-const { SideBar } = require('../SideBar.min.js');
-const { NoteList } = require('../NoteList.min.js');
+const { SideBar } = require('../SideBar/SideBar.min.js');
+const { NoteList } = require('../NoteList/NoteList.min.js');
 const NoteEditor = require('../NoteEditor/NoteEditor.js').default;
 const { stateUtils } = require('lib/reducer.js');
 const { PromptDialog } = require('../PromptDialog.min.js');

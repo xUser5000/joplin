@@ -9,6 +9,8 @@ const commandsWithDependencies = [
 	require('../commands/startExternalEditing'),
 	require('../commands/stopExternalEditing'),
 	require('../commands/showLocalSearch'),
+	require('../commands/focusElementNoteTitle'),
+	require('../commands/focusElementNoteBody'),
 ];
 
 interface HookDependencies {
@@ -41,6 +43,14 @@ function editorCommandRuntime(declaration:CommandDeclaration, editorRef:any):Com
 
 				editorRef.current.execCommand(execArgs);
 			}
+		},
+		isEnabled: (props:any) => {
+			return !!props.noteId;
+		},
+		mapStateToProps: (state:any) => {
+			return {
+				noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null,
+			};
 		},
 	};
 }

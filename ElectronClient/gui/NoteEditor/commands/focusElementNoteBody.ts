@@ -1,7 +1,9 @@
 import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
+const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
 	name: 'focusElementNoteBody',
+	label: () => _('Note body'),
 };
 
 export const runtime = (comp:any):CommandRuntime => {

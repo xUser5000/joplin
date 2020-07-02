@@ -1,7 +1,9 @@
 import { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
+const { _ } = require('lib/locale');
 
 export const declaration:CommandDeclaration = {
 	name: 'focusElementNoteTitle',
+	label: () => _('Note title'),
 };
 
 export const runtime = (comp:any):CommandRuntime => {
@@ -10,13 +12,8 @@ export const runtime = (comp:any):CommandRuntime => {
 			if (!comp.titleInputRef.current) return;
 			comp.titleInputRef.current.focus();
 		},
-		// isEnabled: (props:any):boolean => {
-		// 	return props.sidebarVisibility;
-		// },
-		// mapStateToProps: (state:any):any => {
-		// 	return {
-		// 		sidebarVisibility: state.sidebarVisibility,
-		// 	};
-		// },
+		isEnabled: ():boolean => {
+			return !!comp.titleInputRef.current;
+		},
 	};
 };

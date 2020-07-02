@@ -10,7 +10,7 @@ const Note = require('lib/models/Note.js');
 const Tag = require('lib/models/Tag.js');
 const { _ } = require('lib/locale.js');
 const { themeStyle } = require('lib/theme');
-const { bridge } = require('electron').remote.require('../bridge');
+const { bridge } = require('electron').remote.require('./bridge');
 const Menu = bridge().Menu;
 const MenuItem = bridge().MenuItem;
 const InteropServiceHelper = require('../../InteropServiceHelper.js');
@@ -223,7 +223,7 @@ class SideBarComponent extends React.Component {
 	doCommand(command) {
 		if (!command) return;
 
-		let commandProcessed = true;
+		// const commandProcessed = true;
 
 		throw new Error('Called SideBar.doCommand');
 
@@ -245,12 +245,12 @@ class SideBarComponent extends React.Component {
 		// 	commandProcessed = false;
 		// }
 
-		if (commandProcessed) {
-			this.props.dispatch({
-				type: 'WINDOW_COMMAND',
-				name: null,
-			});
-		}
+		// if (commandProcessed) {
+		// 	this.props.dispatch({
+		// 		type: 'WINDOW_COMMAND',
+		// 		name: null,
+		// 	});
+		// }
 	}
 
 	componentWillUnmount() {
@@ -733,7 +733,7 @@ class SideBarComponent extends React.Component {
 				key="sync_button"
 				onClick={() => {
 					CommandService.instance().execute('synchronize');
-					//this.sync_click();
+					// this.sync_click();
 				}}
 			>
 				{icon}

@@ -1,11 +1,11 @@
-const { ItemList } = require('./ItemList.min.js');
+const { ItemList } = require('../ItemList.min.js');
 const React = require('react');
 const { connect } = require('react-redux');
 const { time } = require('lib/time-utils.js');
 const { themeStyle } = require('lib/theme');
 const BaseModel = require('lib/BaseModel');
 const { _ } = require('lib/locale.js');
-const { bridge } = require('electron').remote.require('../bridge');
+const { bridge } = require('electron').remote.require('./bridge');
 const eventManager = require('../../eventManager');
 const SearchEngine = require('lib/services/SearchEngine');
 const Note = require('lib/models/Note');
@@ -267,7 +267,7 @@ class NoteListComponent extends React.Component {
 		return null;
 	}
 
-	doCommand(command) {
+	doCommand() {
 		throw new Error('Calling NoteList.doCommand');
 		// if (!command) return;
 
