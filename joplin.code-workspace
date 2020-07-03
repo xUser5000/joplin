@@ -349,7 +349,12 @@
 			"ElectronClient/gui/NoteEditor/commands/stopExternalEditing.js": true,
 			"ElectronClient/gui/NoteList/commands/focusElementNoteList.js": true,
 			"ElectronClient/gui/SideBar/commands/focusElementSideBar.js": true,
-			"ReactNativeClient/lib/commands/synchronize.js": true
+			"ReactNativeClient/lib/commands/synchronize.js": true,
+			"ElectronClient/commands/startExternalEditing.js": true,
+			"ElectronClient/commands/stopExternalEditing.js": true,
+			"ElectronClient/gui/NoteEditor/commands/showRevisions.js": true,
+			"ReactNativeClient/lib/commands/historyBackward.js": true,
+			"ReactNativeClient/lib/commands/historyForward.js": true
 		},
 		"spellright.language": [
 			"en"
