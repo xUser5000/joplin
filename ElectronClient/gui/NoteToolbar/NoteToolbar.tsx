@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import CommandService from '../../lib/services/CommandService';
 const { connect } = require('react-redux');
 const { buildStyle } = require('lib/theme');
@@ -35,53 +36,61 @@ function styles_(props:NoteToolbarProps) {
 	});
 }
 
-function useToolbarItems(props:NoteToolbarProps) {
-	const { note, folders, watchedNoteFiles, notesParentType } = props;
-
-	const toolbarItems = [];
-
-	const selectedNoteFolder = Folder.byId(folders, note.parent_id);
-
-	toolbarItems.push(
-		CommandService.instance().commandToToolbarButton('historyBackward')
-	);
-
-	toolbarItems.push(
-		CommandService.instance().commandToToolbarButton('historyForward')
-	);
-
-	if (selectedNoteFolder && ['Search', 'Tag', 'SmartFilter'].includes(notesParentType)) {
-		toolbarItems.push({
-			title: _('In: %s', substrWithEllipsis(selectedNoteFolder.title, 0, 16)),
-			iconName: 'fa-book',
-			onClick: () => {
-				props.dispatch({
-					type: 'FOLDER_AND_NOTE_SELECT',
-					folderId: selectedNoteFolder.id,
-					noteId: note.id,
-				});
-			},
-		});
-	}
-
-	toolbarItems.push(CommandService.instance().commandToToolbarButton('showNoteProperties'));
-
-	if (watchedNoteFiles.indexOf(note.id) >= 0) {
-		toolbarItems.push(CommandService.instance().commandToToolbarButton('stopExternalEditing'));
-	} else {
-		toolbarItems.push(CommandService.instance().commandToToolbarButton('startExternalEditing'));
-	}
-
-	toolbarItems.push(CommandService.instance().commandToToolbarButton('editAlarm'));
-
-	toolbarItems.push(CommandService.instance().commandToToolbarButton('setTags'));
-
-	return toolbarItems;
-}
-
 function NoteToolbar(props:NoteToolbarProps) {
 	const styles = styles_(props);
-	const toolbarItems = useToolbarItems(props);
+	const [toolbarItems, setToolbarItems] = useState([]);
+	const selectedNoteFolder = Folder.byId(props.folders, props.note.parent_id);
+
+	const cmdService = CommandService.instance();
+
+	const updateToolbarItems = useCallback(() => {
+		const output = [];
+
+		output.push(
+			cmdService.commandToToolbarButton('historyBackward')
+		);
+
+		output.push(
+			cmdService.commandToToolbarButton('historyForward')
+		);
+
+		if (selectedNoteFolder.id && ['Search', 'Tag', 'SmartFilter'].includes(props.notesParentType)) {
+			output.push({
+				title: _('In: %s', substrWithEllipsis(selectedNoteFolder.title, 0, 16)),
+				iconName: 'fa-book',
+				onClick: () => {
+					props.dispatch({
+						type: 'FOLDER_AND_NOTE_SELECT',
+						folderId: selectedNoteFolder.id,
+						noteId: props.note.id,
+					});
+				},
+			});
+		}
+
+		output.push(cmdService.commandToToolbarButton('showNoteProperties'));
+
+		if (props.watchedNoteFiles.indexOf(props.note.id) >= 0) {
+			output.push(cmdService.commandToToolbarButton('stopExternalEditing'));
+		} else {
+			output.push(cmdService.commandToToolbarButton('startExternalEditing'));
+		}
+
+		output.push(cmdService.commandToToolbarButton('editAlarm'));
+
+		output.push(cmdService.commandToToolbarButton('setTags'));
+
+		setToolbarItems(output);
+	}, [props.note.id, selectedNoteFolder.id, selectedNoteFolder.title, props.watchedNoteFiles, props.notesParentType]);
+
+	useEffect(() => {
+		updateToolbarItems();
+		cmdService.on('commandsEnabledStateChange', updateToolbarItems);
+		return () => {
+			cmdService.off('commandsEnabledStateChange', updateToolbarItems);
+		};
+	}, [updateToolbarItems]);
+
 	return <Toolbar style={styles.root} items={toolbarItems} />;
 }
 

@@ -65,6 +65,7 @@ export default class CommandService extends BaseService {
 
 	private commands_:Commands = {};
 	private commandPreviousEnabledStates_:CommandEnabledStates = {};
+	private mapStateToPropsIID_:any = null;
 
 	initialize(store:any) {
 		utils.store = store;
@@ -88,7 +89,15 @@ export default class CommandService extends BaseService {
 		return false;
 	}
 
-	mapStateToProps(state:any) {
+	scheduleMapStateToProps(state:any) {
+		if (this.mapStateToPropsIID_) clearTimeout(this.mapStateToPropsIID_);
+
+		this.mapStateToPropsIID_ = setTimeout(() => {
+			this.mapStateToProps(state);
+		}, 50);
+	}
+
+	private mapStateToProps(state:any) {
 		const newState = state;
 
 		const changedCommands:any = {};
@@ -155,7 +164,7 @@ export default class CommandService extends BaseService {
 	}
 
 	registerRuntime(commandName:string, runtime:CommandRuntime) {
-		console.info('CommandService::registerRuntime:', commandName);
+		// console.info('CommandService::registerRuntime:', commandName);
 
 		if (typeof commandName !== 'string') throw new Error(`Command name must be a string. Got: ${JSON.stringify(commandName)}`);
 
@@ -180,7 +189,7 @@ export default class CommandService extends BaseService {
 	}
 
 	unregisterRuntime(commandName:string) {
-		console.info('CommandService::unregisterRuntime:', commandName);
+		// console.info('CommandService::unregisterRuntime:', commandName);
 
 		const command = this.commandByName(commandName, { mustExist: false });
 		if (!command || !command.runtime) return;

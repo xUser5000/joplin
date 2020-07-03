@@ -64,6 +64,7 @@ class MainScreenComponent extends React.Component {
 
 		this.setupAppCloseHandling();
 
+		this.commandService_commandsEnabledStateChange = this.commandService_commandsEnabledStateChange.bind(this);
 		this.notePropertiesDialog_close = this.notePropertiesDialog_close.bind(this);
 		this.noteContentPropertiesDialog_close = this.noteContentPropertiesDialog_close.bind(this);
 		this.shareNoteDialog_close = this.shareNoteDialog_close.bind(this);
@@ -122,7 +123,30 @@ class MainScreenComponent extends React.Component {
 		this.setState({ shareNoteDialogOptions: {} });
 	}
 
+	commandService_commandsEnabledStateChange(event) {
+		const buttonCommandNames = [
+			'toggleSidebar',
+			'toggleNoteList',
+			'newNote',
+			'newTodo',
+			'newNotebook',
+			'toggleVisiblePanes',
+		];
+
+		for (const n of buttonCommandNames) {
+			if (event.commands[n]) {
+				this.forceUpdate();
+				return;
+			}
+		}
+	}
+
+	componentDidMount() {
+		CommandService.instance().on('commandsEnabledStateChange', this.commandService_commandsEnabledStateChange);
+	}
+
 	componentWillUnmount() {
+		CommandService.instance().off('commandsEnabledStateChange', this.commandService_commandsEnabledStateChange);
 		this.unregisterCommands();
 	}
 

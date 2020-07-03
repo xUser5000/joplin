@@ -1021,7 +1021,7 @@ const reducer = (state = defaultState, action) => {
 		newState = handleHistory(newState, action);
 	}
 
-	CommandService.instance().mapStateToProps(newState);
+	CommandService.instance().scheduleMapStateToProps(newState);
 
 	return newState;
 };

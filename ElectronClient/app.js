@@ -291,8 +291,6 @@ class Application extends BaseApplication {
 	}
 
 	async generalMiddleware(store, next, action) {
-		let mustUpdateMenuItemStates = false;
-
 		if (action.type == 'SETTING_UPDATE_ONE' && action.key == 'locale' || action.type == 'SETTING_UPDATE_ALL') {
 			setLocale(Setting.value('locale'));
 			// The bridge runs within the main process, with its own instance of locale.js
@@ -311,10 +309,6 @@ class Application extends BaseApplication {
 
 		if (action.type == 'SETTING_UPDATE_ONE' && action.key == 'windowContentZoomFactor' || action.type == 'SETTING_UPDATE_ALL') {
 			webFrame.setZoomFactor(Setting.value('windowContentZoomFactor') / 100);
-		}
-
-		if (action.type == 'SETTING_UPDATE_ONE' && ['editor.codeView'].includes(action.key) || action.type == 'SETTING_UPDATE_ALL') {
-			mustUpdateMenuItemStates = true;
 		}
 
 		if (['EVENT_NOTE_ALARM_FIELD_CHANGE', 'NOTE_DELETE'].indexOf(action.type) >= 0) {
@@ -340,15 +334,6 @@ class Application extends BaseApplication {
 			Setting.setValue('noteListVisibility', newState.noteListVisibility);
 		}
 
-		if (action.type.indexOf('NOTE_SELECT') === 0 || action.type.indexOf('FOLDER_SELECT') === 0 || action.type === 'NOTE_VISIBLE_PANES_TOGGLE') {
-			mustUpdateMenuItemStates = true;
-		}
-
-		if (['NOTE_DEVTOOLS_TOGGLE', 'NOTE_DEVTOOLS_SET'].indexOf(action.type) >= 0) {
-			this.toggleDevTools(newState.devToolsVisible);
-			mustUpdateMenuItemStates = true;
-		}
-
 		if (action.type === 'FOLDER_AND_NOTE_SELECT') {
 			await Folder.expandTree(newState.folders, action.folderId);
 		}
@@ -356,8 +341,6 @@ class Application extends BaseApplication {
 		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && ['themeAutoDetect', 'theme', 'preferredLightTheme', 'preferredDarkTheme'].includes(action.key)) || action.type == 'SETTING_UPDATE_ALL')) {
 			this.handleThemeAutoDetect();
 		}
-
-		if (mustUpdateMenuItemStates) this.updateMenuItemStates(newState);
 
 		return result;
 	}
@@ -1022,16 +1005,18 @@ class Application extends BaseApplication {
 		const menuEnabledState = CommandService.instance().commandsEnabledState(this.previousMenuEnabledState);
 		this.previousMenuEnabledState = menuEnabledState;
 
+		const menu = Menu.getApplicationMenu();
+
 		for (const itemId in menuEnabledState) {
-			const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
+			const menuItem = menu.getMenuItemById(itemId);
 			if (!menuItem) continue;
 			menuItem.enabled = menuEnabledState[itemId];
 		}
 
-		const sortNoteReverseItem = Menu.getApplicationMenu().getMenuItemById('sort:notes:reverse');
+		const sortNoteReverseItem = menu.getMenuItemById('sort:notes:reverse');
 		sortNoteReverseItem.enabled = state.settings['notes.sortOrder.field'] !== 'order';
 
-		const devToolsMenuItem = Menu.getApplicationMenu().getMenuItemById('help:toggleDevTools');
+		const devToolsMenuItem = menu.getMenuItemById('help:toggleDevTools');
 		devToolsMenuItem.checked = state.devToolsVisible;
 	}
 
