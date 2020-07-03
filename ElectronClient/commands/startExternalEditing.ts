@@ -26,5 +26,11 @@ export const runtime = ():CommandRuntime => {
 
 			// await comp.saveNoteAndWait(comp.formNote);
 		},
+		isEnabled: (props:any) => {
+			return !!props.noteId;
+		},
+		mapStateToProps: (state:any) => {
+			return { noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null };
+		},
 	};
 };

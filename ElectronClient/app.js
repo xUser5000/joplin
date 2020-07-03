@@ -757,53 +757,30 @@ class Application extends BaseApplication {
 			},
 		}));
 
+		const separator = () => {
+			return {
+				type: 'separator',
+				screens: ['Main'],
+			};
+		};
+
 		const rootMenus = {
 			edit: {
 				id: 'edit',
 				label: _('&Edit'),
 				submenu: [
-					{
-						id: 'edit:copy',
-						label: _('Copy'),
-						role: 'copy',
-						accelerator: 'CommandOrControl+C',
-					}, {
-						id: 'edit:cut',
-						label: _('Cut'),
-						role: 'cut',
-						accelerator: 'CommandOrControl+X',
-					}, {
-						id: 'edit:paste',
-						label: _('Paste'),
-						role: 'paste',
-						accelerator: 'CommandOrControl+V',
-					}, {
-						id: 'edit:selectAll',
-						label: _('Select all'),
-						role: 'selectall',
-						accelerator: 'CommandOrControl+A',
-					}, {
-						type: 'separator',
-						screens: ['Main'],
-					},
-
+					cmdService.commandToMenuItem('textCopy', 'CommandOrControl+C'),
+					cmdService.commandToMenuItem('textCut', 'CommandOrControl+X'),
+					cmdService.commandToMenuItem('textPaste', 'CommandOrControl+V'),
+					cmdService.commandToMenuItem('textSelectAll', 'CommandOrControl+A'),
+					separator(),
 					cmdService.commandToMenuItem('textBold', 'CommandOrControl+B'),
 					cmdService.commandToMenuItem('textItalic', 'CommandOrControl+I'),
 					cmdService.commandToMenuItem('textLink', 'CommandOrControl+K'),
 					cmdService.commandToMenuItem('textCode', 'CommandOrControl+`'),
-
-					{
-						type: 'separator',
-						screens: ['Main'],
-					},
-
+					separator(),
 					cmdService.commandToMenuItem('insertDateTime', 'CommandOrControl+Shift+T'),
-
-					{
-						type: 'separator',
-						screens: ['Main'],
-					},
-
+					separator(),
 					cmdService.commandToMenuItem('focusSearch', shim.isMac() ? 'Shift+Command+F' : 'F6'),
 					cmdService.commandToMenuItem('showLocalSearch', 'CommandOrControl+F'),
 				],
@@ -811,25 +788,17 @@ class Application extends BaseApplication {
 			view: {
 				label: _('&View'),
 				submenu: [
-
 					CommandService.instance().commandToMenuItem('toggleSidebar', shim.isMac() ? 'Option+Command+S' : 'F10'),
-
+					separator(),
 					{
-						type: 'separator',
-						screens: ['Main'],
-					}, {
 						label: _('Layout button sequence'),
 						screens: ['Main'],
 						submenu: layoutButtonSequenceOptions,
 					},
-
 					CommandService.instance().commandToMenuItem('toggleNoteList'),
 					CommandService.instance().commandToMenuItem('toggleVisiblePanes', 'CommandOrControl+L'),
-
+					separator(),
 					{
-						type: 'separator',
-						screens: ['Main'],
-					}, {
 						label: Setting.settingMetadata('notes.sortOrder.field').label(),
 						screens: ['Main'],
 						submenu: sortNoteItems,
@@ -861,17 +830,15 @@ class Application extends BaseApplication {
 						click: () => {
 							Setting.setValue('showCompletedTodos', !Setting.value('showCompletedTodos'));
 						},
-					}, {
-						type: 'separator',
-						screens: ['Main'],
-					}, {
+					},
+					separator(),
+					{
 						label: _('Focus'),
 						screens: ['Main'],
 						submenu: focusItems,
-					}, {
-						type: 'separator',
-						screens: ['Main'],
-					}, {
+					},
+					separator(),
+					{
 						label: _('Actual Size'),
 						click: () => {
 							Setting.setValue('windowContentZoomFactor', 100);
@@ -909,12 +876,7 @@ class Application extends BaseApplication {
 
 					CommandService.instance().commandToMenuItem('startExternalEditing', 'CommandOrControl+E'),
 					CommandService.instance().commandToMenuItem('setTags', 'CommandOrControl+Alt+T'),
-
-					{
-						type: 'separator',
-						screens: ['Main'],
-					},
-
+					separator(),
 					CommandService.instance().commandToMenuItem('showNoteContentProperties'),
 				],
 			},
@@ -939,10 +901,9 @@ class Application extends BaseApplication {
 					label: _('Check for updates...'),
 					visible: shim.isMac() ? false : true,
 					click: () => _checkForUpdates(this),
-				}, {
-					type: 'separator',
-					screens: ['Main'],
-				}, {
+				},
+				separator(),
+				{
 					id: 'help:toggleDevTools',
 					type: 'checkbox',
 					label: _('Toggle development tools'),
@@ -1067,49 +1028,11 @@ class Application extends BaseApplication {
 			menuItem.enabled = menuEnabledState[itemId];
 		}
 
-		// const selectedNoteIds = state.selectedNoteIds;
-		// const note = selectedNoteIds.length === 1 ? await Note.load(selectedNoteIds[0]) : null;
-		// const aceEditorViewerOnly = state.settings['editor.codeView'] && state.noteVisiblePanes.length === 1 && state.noteVisiblePanes[0] === 'viewer';
+		const sortNoteReverseItem = Menu.getApplicationMenu().getMenuItemById('sort:notes:reverse');
+		sortNoteReverseItem.enabled = state.settings['notes.sortOrder.field'] !== 'order';
 
-		// // Only enabled when there's only one active note, and that note
-		// // is a Markdown note (markup_language = MARKDOWN), and the
-		// // editor is in edit mode (not viewer-only mode).
-		// const singleMarkdownNoteMenuItems = [
-		// 	'edit:bold',
-		// 	'edit:italic',
-		// 	'edit:link',
-		// 	'edit:code',
-		// 	'edit:insertDateTime',
-		// ];
-
-		// // Only enabled when there's only one active note.
-		// const singleNoteMenuItems = [
-		// 	'edit:copy',
-		// 	'edit:paste',
-		// 	'edit:cut',
-		// 	'edit:selectAll',
-		// 	'edit:showLocalSearch',
-		// 	'edit:commandStartExternalEditing',
-		// 	'note:statistics',
-		// ];
-
-		// for (const itemId of singleMarkdownNoteMenuItems) {
-		// 	const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
-		// 	if (!menuItem) continue;
-		// 	menuItem.enabled = !aceEditorViewerOnly && !!note && note.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
-		// }
-
-		// for (const itemId of singleNoteMenuItems) {
-		// 	const menuItem = Menu.getApplicationMenu().getMenuItemById(itemId);
-		// 	if (!menuItem) continue;
-		// 	menuItem.enabled = selectedNoteIds.length === 1;
-		// }
-
-		// const sortNoteReverseItem = Menu.getApplicationMenu().getMenuItemById('sort:notes:reverse');
-		// sortNoteReverseItem.enabled = state.settings['notes.sortOrder.field'] !== 'order';
-
-		// const menuItem = Menu.getApplicationMenu().getMenuItemById('help:toggleDevTools');
-		// menuItem.checked = state.devToolsVisible;
+		const devToolsMenuItem = Menu.getApplicationMenu().getMenuItemById('help:toggleDevTools');
+		devToolsMenuItem.checked = state.devToolsVisible;
 	}
 
 	bridge_nativeThemeUpdated() {

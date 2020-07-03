@@ -17,5 +17,11 @@ export const runtime = ():CommandRuntime => {
 		execute: async (props:Props) => {
 			ExternalEditWatcher.instance().stopWatching(props.noteId);
 		},
+		isEnabled: (props:any) => {
+			return !!props.noteId;
+		},
+		mapStateToProps: (state:any) => {
+			return { noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null };
+		},
 	};
 };

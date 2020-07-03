@@ -12,6 +12,11 @@ export interface CommandDeclaration {
 	name: string
 	label?():string,
 	iconName?: string,
+	// Same as `role` key in Electron MenuItem:
+	// https://www.electronjs.org/docs/api/menu-item#new-menuitemoptions
+	// Note that due to a bug in Electron, menu items with a role cannot
+	// be disabled.
+	role?: string,
 }
 
 export interface Command {
@@ -233,6 +238,7 @@ export default class CommandService extends BaseService {
 		};
 
 		if (accelerator) item.accelerator = accelerator;
+		if (command.declaration.role) item.role = command.declaration.role;
 
 		return item;
 	}

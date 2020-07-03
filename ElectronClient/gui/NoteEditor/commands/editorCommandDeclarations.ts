@@ -6,6 +6,26 @@ const declarations:CommandDeclaration[] = [
 		name: 'insertText',
 	},
 	{
+		name: 'textCopy',
+		label: () => _('Copy'),
+		role: 'copy',
+	},
+	{
+		name: 'textCut',
+		label: () => _('Cut'),
+		role: 'cut',
+	},
+	{
+		name: 'textPaste',
+		label: () => _('Paste'),
+		role: 'paste',
+	},
+	{
+		name: 'textSelectAll',
+		label: () => _('Select all'),
+		role: 'selectAll',
+	},
+	{
 		name: 'textBold',
 		label: () => _('Bold'),
 		iconName: 'fa-bold',

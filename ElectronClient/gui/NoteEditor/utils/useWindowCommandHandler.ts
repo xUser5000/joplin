@@ -3,7 +3,9 @@ import { FormNote } from './types';
 import editorCommandDeclarations from '../commands/editorCommandDeclarations';
 import CommandService, { CommandDeclaration,  CommandRuntime } from '../../../lib/services/CommandService';
 const { time } = require('lib/time-utils.js');
+const BaseModel = require('lib/BaseModel');
 const { reg } = require('lib/registry.js');
+const { MarkupToHtml } = require('lib/joplin-renderer');
 
 const commandsWithDependencies = [
 	require('../commands/showLocalSearch'),
@@ -42,10 +44,19 @@ function editorCommandRuntime(declaration:CommandDeclaration, editorRef:any):Com
 			}
 		},
 		isEnabled: (props:any) => {
-			return !!props.noteId;
+			if (props.markdownEditorViewerOnly) return false;
+			if (!props.noteId) return false;
+			const note = BaseModel.byId(props.notes, props.noteId);
+			if (!note) return false;
+			return note.markup_language === MarkupToHtml.MARKUP_LANGUAGE_MARKDOWN;
 		},
 		mapStateToProps: (state:any) => {
 			return {
+				// True when the Markdown editor is active, and only the viewer pane is visible
+				// In this case, all editor-related shortcuts are disabled.
+				markdownEditorViewerOnly: state.settings['editor.codeView'] && state.noteVisiblePanes.length === 1 && state.noteVisiblePanes[0] === 'viewer',
+				noteVisiblePanes: state.noteVisiblePanes,
+				notes: state.notes,
 				noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null,
 			};
 		},
@@ -53,27 +64,15 @@ function editorCommandRuntime(declaration:CommandDeclaration, editorRef:any):Com
 }
 
 export default function useWindowCommandHandler(dependencies:HookDependencies) {
-	const { formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef, saveNoteAndWait } = dependencies;
+	const { setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef } = dependencies;
 
 	useEffect(() => {
-		if (editorRef.current) {
-			for (const declaration of editorCommandDeclarations) {
-				CommandService.instance().registerRuntime(declaration.name, editorCommandRuntime(declaration, editorRef));
-			}
+		for (const declaration of editorCommandDeclarations) {
+			CommandService.instance().registerRuntime(declaration.name, editorCommandRuntime(declaration, editorRef));
 		}
 
-		return () => {
-			for (const declaration of editorCommandDeclarations) {
-				CommandService.instance().unregisterRuntime(declaration.name);
-			}
-		};
-	}, [editorRef.current]);
-
-	useEffect(() => {
 		const dependencies = {
-			formNote,
 			editorRef,
-			saveNoteAndWait,
 			setShowLocalSearch,
 			noteSearchBarRef,
 			titleInputRef,
@@ -84,9 +83,13 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 		}
 
 		return () => {
+			for (const declaration of editorCommandDeclarations) {
+				CommandService.instance().unregisterRuntime(declaration.name);
+			}
+
 			for (const command of commandsWithDependencies) {
 				CommandService.instance().unregisterRuntime(command.declaration.name);
 			}
 		};
-	}, [formNote, saveNoteAndWait]);
+	}, [editorRef, setShowLocalSearch, noteSearchBarRef, titleInputRef]);
 }
