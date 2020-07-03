@@ -1,9 +1,9 @@
 import CommandService, { CommandRuntime, CommandDeclaration } from '../../../lib/services/CommandService';
 const { _ } = require('lib/locale');
+const TemplateUtils = require('lib/TemplateUtils');
 
 export const declaration:CommandDeclaration = {
 	name: 'selectTemplate',
-	// TODO: need to create createNoteFromTemplate, createTodoFromTemplate, insertTemplate
 };
 
 export const runtime = (comp:any):CommandRuntime => {
@@ -20,11 +20,7 @@ export const runtime = (comp:any):CommandRuntime => {
 							if (noteType === 'note' || noteType === 'todo') {
 								CommandService.instance().execute('newNote', { template: answer.value, isTodo: noteType === 'todo' });
 							} else {
-								comp.props.dispatch({
-									type: 'WINDOW_COMMAND',
-									name: 'insertTemplate',
-									value: answer.value,
-								});
+								CommandService.instance().execute('insertText', { value: TemplateUtils.render(answer.value) });
 							}
 						}
 

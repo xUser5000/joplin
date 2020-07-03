@@ -87,7 +87,6 @@ const appDefaultState = Object.assign({}, defaultState, {
 	},
 	navHistory: [],
 	fileToImport: null,
-	windowCommand: null,
 	noteVisiblePanes: ['editor', 'viewer'],
 	sidebarVisibility: true,
 	noteListVisibility: true,
@@ -163,16 +162,6 @@ class Application extends BaseApplication {
 
 				newState = Object.assign({}, state);
 				newState.windowContentSize = action.size;
-				break;
-
-			case 'WINDOW_COMMAND':
-
-				{
-					newState = Object.assign({}, state);
-					const command = Object.assign({}, action);
-					delete command.type;
-					newState.windowCommand = command.name ? command : null;
-				}
 				break;
 
 			case 'NOTE_VISIBLE_PANES_TOGGLE':

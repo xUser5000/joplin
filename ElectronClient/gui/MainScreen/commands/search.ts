@@ -11,6 +11,8 @@ export const declaration:CommandDeclaration = {
 export const runtime = (comp:any):CommandRuntime => {
 	return {
 		execute: async ({ query }:any) => {
+			console.info('RUNTIME', query);
+
 			if (!comp.searchId_) comp.searchId_ = uuid.create();
 
 			comp.props.dispatch({

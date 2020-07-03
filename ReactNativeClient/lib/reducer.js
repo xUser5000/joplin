@@ -60,7 +60,6 @@ const defaultState = {
 	provisionalNoteIds: [],
 	editorNoteStatuses: {},
 	isInsertingNotes: false,
-	commands: {},
 };
 
 const MAX_HISTORY = 200;
@@ -158,17 +157,6 @@ stateUtils.getCurrentNote = function(state) {
 	}
 	return null;
 };
-
-// function commandSetProperty(state, commandName, propName, propValue) {
-// 	if (state.commands && state.commands[commandName] && state.commands[propName] === propValue) return state;
-
-// 	const newState = Object.assign({}, state);
-// 	newState.commands = Object.assign({}, newState.commands);
-// 	newState.commands[commandName] = Object.assign({}, newState.commands[commandName], {
-// 		[propName]: propValue,
-// 	});
-// 	return newState;
-// }
 
 function arrayHasEncryptedItems(array) {
 	for (let i = 0; i < array.length; i++) {
@@ -1006,11 +994,6 @@ const reducer = (state = defaultState, action) => {
 			newState = Object.assign({}, state);
 			newState.selectedNoteTags = action.items;
 			break;
-
-			// case 'COMMAND_PROP_SET':
-
-			// 	newState = commandSetProperty(newState, action.name, action.propName, action.propValue);
-			// 	break;
 
 		case 'PLUGIN_DIALOG_SET':
 			{

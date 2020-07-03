@@ -220,37 +220,10 @@ class SideBarComponent extends React.Component {
 		}
 	}
 
-	doCommand(command) {
-		if (!command) return;
-		throw new Error('Called SideBar.doCommand');
-	}
-
 	componentWillUnmount() {
 		this.clearForceUpdateDuringSync();
 
 		CommandService.instance().componentUnregisterCommands(commands);
-	}
-
-	componentDidUpdate(prevProps) {
-		if (prevProps.windowCommand !== this.props.windowCommand) {
-			this.doCommand(this.props.windowCommand);
-		}
-
-		// if (shim.isLinux()) {
-		// 	// For some reason, the UI seems to sleep in some Linux distro during
-		// 	// sync. Cannot find the reason for it and cannot replicate, so here
-		// 	// as a test force the update at regular intervals.
-		// 	// https://github.com/laurent22/joplin/issues/312#issuecomment-429472193
-		// 	if (!prevProps.syncStarted && this.props.syncStarted) {
-		// 		this.clearForceUpdateDuringSync();
-
-		// 		this.forceUpdateDuringSyncIID_ = setInterval(() => {
-		// 			this.forceUpdate();
-		// 		}, 2000);
-		// 	}
-
-		// 	if (prevProps.syncStarted && !this.props.syncStarted) this.clearForceUpdateDuringSync();
-		// }
 	}
 
 	async itemContextMenu(event) {
@@ -783,7 +756,6 @@ const mapStateToProps = state => {
 		collapsedFolderIds: state.collapsedFolderIds,
 		decryptionWorker: state.decryptionWorker,
 		resourceFetcher: state.resourceFetcher,
-		windowCommand: state.windowCommand,
 		sidebarVisibility: state.sidebarVisibility,
 		noteListVisibility: state.noteListVisibility,
 	};

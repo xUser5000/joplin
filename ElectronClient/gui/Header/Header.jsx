@@ -81,12 +81,6 @@ class HeaderComponent extends React.Component {
 		};
 	}
 
-	async UNSAFE_componentWillReceiveProps(nextProps) {
-		if (nextProps.windowCommand) {
-			this.doCommand(nextProps.windowCommand);
-		}
-	}
-
 	componentDidUpdate(prevProps) {
 		if (prevProps.notesParentType !== this.props.notesParentType && this.props.notesParentType !== 'Search' && this.state.searchQuery) {
 			this.resetSearch();
@@ -121,12 +115,6 @@ class HeaderComponent extends React.Component {
 				showButtonLabels: !mediaQuery.matches,
 			});
 		}
-	}
-
-	async doCommand(command) {
-		if (!command) return;
-
-		console.warn('Header.doCommand', command);
 	}
 
 	back_click() {
@@ -329,7 +317,6 @@ class HeaderComponent extends React.Component {
 const mapStateToProps = state => {
 	return {
 		theme: state.settings.theme,
-		windowCommand: state.windowCommand,
 		notesParentType: state.notesParentType,
 		size: state.windowContentSize,
 		zoomFactor: state.settings.windowContentZoomFactor / 100,

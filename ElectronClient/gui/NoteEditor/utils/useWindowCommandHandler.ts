@@ -12,7 +12,6 @@ const commandsWithDependencies = [
 ];
 
 interface HookDependencies {
-	windowCommand: any,
 	formNote:FormNote,
 	setShowLocalSearch:Function,
 	dispatch:Function,
@@ -54,7 +53,7 @@ function editorCommandRuntime(declaration:CommandDeclaration, editorRef:any):Com
 }
 
 export default function useWindowCommandHandler(dependencies:HookDependencies) {
-	const { windowCommand, dispatch, formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef, saveNoteAndWait } = dependencies;
+	const { formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef, saveNoteAndWait } = dependencies;
 
 	useEffect(() => {
 		if (editorRef.current) {
@@ -90,14 +89,4 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 			}
 		};
 	}, [formNote, saveNoteAndWait]);
-
-	useEffect(() => {
-		async function processCommand() {
-			if (!windowCommand) return;
-
-			throw new Error(`Calling NoteEditor::useWindowCommandHandler:${windowCommand.name}`);
-		}
-
-		processCommand();
-	}, [windowCommand, dispatch, formNote, saveNoteAndWait]);
 }

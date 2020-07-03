@@ -126,13 +126,6 @@ class MainScreenComponent extends React.Component {
 		this.unregisterCommands();
 	}
 
-	UNSAFE_componentWillReceiveProps(newProps) {
-		// Execute a command if any, and if we haven't already executed it
-		if (newProps.windowCommand && newProps.windowCommand !== this.props.windowCommand) {
-			this.doCommand(newProps.windowCommand);
-		}
-	}
-
 	toggleSidebar() {
 		this.props.dispatch({
 			type: 'SIDEBAR_VISIBILITY_TOGGLE',
@@ -143,65 +136,6 @@ class MainScreenComponent extends React.Component {
 		this.props.dispatch({
 			type: 'NOTELIST_VISIBILITY_TOGGLE',
 		});
-	}
-
-	async doCommand(command) {
-		if (!command) return;
-
-		let commandProcessed = true;
-
-		let delayedFunction = null;
-		const delayedArgs = null;
-
-		console.warn('MainScreen.doCommand', command);
-
-		if (command.name === 'setTags') {
-			CommandService.instance().execute('setTags', command);
-		} else if (command.name === 'moveToFolder') {
-			CommandService.instance().execute('moveToFolder', command);
-		} else if (command.name === 'renameFolder') {
-			CommandService.instance().execute('renameFolder', command);
-		} else if (command.name === 'renameTag') {
-			CommandService.instance().execute('renameTag', command);
-		} else if (command.name === 'search') {
-			CommandService.instance().execute('search', command);
-		} else if (command.name === 'commandNoteProperties') {
-			CommandService.instance().execute('showNoteProperties', command);
-		} else if (command.name === 'commandContentProperties') {
-			CommandService.instance().execute('showNoteContentProperties', { noteId: this.props.selectedNoteId });
-		} else if (command.name === 'commandShareNoteDialog') {
-			CommandService.instance().execute('showShareNoteDialog', command);
-		} else if (command.name === 'toggleVisiblePanes') {
-			CommandService.instance().execute('toggleVisiblePanes');
-		} else if (command.name === 'showModalMessage') {
-			CommandService.instance().execute('showModalMessage', command);
-		} else if (command.name === 'hideModalMessage') {
-			CommandService.instance().execute('hideModalMessage');
-		} else if (command.name === 'editAlarm') {
-			CommandService.instance().execute('editAlarm', command);
-		} else if (command.name === 'selectTemplate') {
-			CommandService.instance().execute('selectTemplate', command);
-		} else if (command.name === 'exportPdf') {
-			CommandService.instance().execute('exportPdf', command);
-		} else if (command.name === 'print') {
-			CommandService.instance().execute('print', command);
-		} else {
-			commandProcessed = false;
-		}
-
-		if (commandProcessed) {
-			this.props.dispatch({
-				type: 'WINDOW_COMMAND',
-				name: null,
-			});
-		}
-
-		if (delayedFunction) {
-			requestAnimationFrame(() => {
-				delayedFunction = delayedFunction.bind(this);
-				delayedFunction(delayedArgs);
-			});
-		}
 	}
 
 	async waitForNoteToSaved(noteId) {
@@ -473,7 +407,7 @@ class MainScreenComponent extends React.Component {
 			title: _('Search...'),
 			iconName: 'fa-search',
 			onQuery: query => {
-				this.doCommand({ name: 'search', query: query });
+				CommandService.instance().execute('search', { query });
 			},
 			type: 'search',
 		});
@@ -525,7 +459,6 @@ const mapStateToProps = state => {
 	return {
 		theme: state.settings.theme,
 		settingEditorCodeView: state.settings['editor.codeView'],
-		windowCommand: state.windowCommand,
 		sidebarVisibility: state.sidebarVisibility,
 		noteListVisibility: state.noteListVisibility,
 		folders: state.folders,

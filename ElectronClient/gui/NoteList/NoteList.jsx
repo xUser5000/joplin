@@ -267,15 +267,7 @@ class NoteListComponent extends React.Component {
 		return null;
 	}
 
-	doCommand() {
-		throw new Error('Calling NoteList.doCommand');
-	}
-
 	componentDidUpdate(prevProps) {
-		if (prevProps.windowCommand !== this.props.windowCommand) {
-			this.doCommand(this.props.windowCommand);
-		}
-
 		if (prevProps.selectedNoteIds !== this.props.selectedNoteIds && this.props.selectedNoteIds.length === 1) {
 			const id = this.props.selectedNoteIds[0];
 			const doRefocus = this.props.notes.length < prevProps.notes.length;
@@ -465,7 +457,6 @@ const mapStateToProps = state => {
 		searches: state.searches,
 		selectedSearchId: state.selectedSearchId,
 		watchedNoteFiles: state.watchedNoteFiles,
-		windowCommand: state.windowCommand,
 		provisionalNoteIds: state.provisionalNoteIds,
 		isInsertingNotes: state.isInsertingNotes,
 		noteSortOrder: state.settings['notes.sortOrder.field'],

@@ -227,7 +227,7 @@ function NoteEditor(props: NoteEditorProps) {
 		}
 	}, [handleProvisionalFlag, formNote, isNewNote, titleHasBeenManuallyChanged]);
 
-	useWindowCommandHandler({ windowCommand: props.windowCommand, dispatch: props.dispatch, formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef, saveNoteAndWait });
+	useWindowCommandHandler({ dispatch: props.dispatch, formNote, setShowLocalSearch, noteSearchBarRef, editorRef, titleInputRef, saveNoteAndWait });
 
 	const onDrop = useDropHandler({ editorRef });
 
@@ -520,7 +520,6 @@ const mapStateToProps = (state: any) => {
 		syncStarted: state.syncStarted,
 		theme: state.settings.theme,
 		watchedNoteFiles: state.watchedNoteFiles,
-		windowCommand: state.windowCommand,
 		notesParentType: state.notesParentType,
 		selectedNoteTags: state.selectedNoteTags,
 		lastEditorScrollPercents: state.lastEditorScrollPercents,
