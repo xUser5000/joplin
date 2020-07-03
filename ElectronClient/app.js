@@ -334,6 +334,10 @@ class Application extends BaseApplication {
 			Setting.setValue('noteListVisibility', newState.noteListVisibility);
 		}
 
+		if (['NOTE_DEVTOOLS_TOGGLE', 'NOTE_DEVTOOLS_SET'].indexOf(action.type) >= 0) {
+			this.toggleDevTools(newState.devToolsVisible);
+		}
+
 		if (action.type === 'FOLDER_AND_NOTE_SELECT') {
 			await Folder.expandTree(newState.folders, action.folderId);
 		}
@@ -772,14 +776,13 @@ class Application extends BaseApplication {
 				label: _('&View'),
 				submenu: [
 					CommandService.instance().commandToMenuItem('toggleSidebar', shim.isMac() ? 'Option+Command+S' : 'F10'),
-					separator(),
+					CommandService.instance().commandToMenuItem('toggleNoteList'),
+					CommandService.instance().commandToMenuItem('toggleVisiblePanes', 'CommandOrControl+L'),
 					{
 						label: _('Layout button sequence'),
 						screens: ['Main'],
 						submenu: layoutButtonSequenceOptions,
 					},
-					CommandService.instance().commandToMenuItem('toggleNoteList'),
-					CommandService.instance().commandToMenuItem('toggleVisiblePanes', 'CommandOrControl+L'),
 					separator(),
 					{
 						label: Setting.settingMetadata('notes.sortOrder.field').label(),
@@ -888,9 +891,7 @@ class Application extends BaseApplication {
 				separator(),
 				{
 					id: 'help:toggleDevTools',
-					type: 'checkbox',
 					label: _('Toggle development tools'),
-					visible: true,
 					click: () => {
 						this.dispatch({
 							type: 'NOTE_DEVTOOLS_TOGGLE',
@@ -1016,8 +1017,8 @@ class Application extends BaseApplication {
 		const sortNoteReverseItem = menu.getMenuItemById('sort:notes:reverse');
 		sortNoteReverseItem.enabled = state.settings['notes.sortOrder.field'] !== 'order';
 
-		const devToolsMenuItem = menu.getMenuItemById('help:toggleDevTools');
-		devToolsMenuItem.checked = state.devToolsVisible;
+		// const devToolsMenuItem = menu.getMenuItemById('help:toggleDevTools');
+		// devToolsMenuItem.checked = state.devToolsVisible;
 	}
 
 	bridge_nativeThemeUpdated() {

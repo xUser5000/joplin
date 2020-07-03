@@ -1,7 +1,7 @@
 const { _ } = require('lib/locale');
 const { bridge } = require('electron').remote.require('./bridge');
 const InteropService = require('lib/services/InteropService');
-const CommandService = require('lib/services/CommandService');
+const CommandService = require('lib/services/CommandService').default;
 const Setting = require('lib/models/Setting');
 const Note = require('lib/models/Note.js');
 const { friendlySafeFilename } = require('lib/path-utils');

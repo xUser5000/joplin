@@ -5,11 +5,14 @@ export interface CommandRuntime {
 	execute(props:any):void
 	isEnabled?(props:any):boolean
 	mapStateToProps?(state:any):any
+	// Used for the (optional) toolbar button title
+	title?(props:any):string,
 	props?:any
 }
 
 export interface CommandDeclaration {
 	name: string
+	// Used for the menu item label, and toolbar button tooltip
 	label?():string,
 	iconName?: string,
 	// Same as `role` key in Electron MenuItem:
@@ -49,8 +52,13 @@ interface CommandByNameOptions {
 	runtimeMustBeRegistered?:boolean,
 }
 
-interface CommandEnabledStates {
-	[key:string]: boolean
+interface CommandState {
+	title: string,
+	enabled: boolean,
+}
+
+interface CommandStates {
+	[key:string]: CommandState
 }
 
 export default class CommandService extends BaseService {
@@ -64,7 +72,7 @@ export default class CommandService extends BaseService {
 	}
 
 	private commands_:Commands = {};
-	private commandPreviousEnabledStates_:CommandEnabledStates = {};
+	private commandPreviousStates_:CommandStates = {};
 	private mapStateToPropsIID_:any = null;
 
 	initialize(store:any) {
@@ -110,15 +118,20 @@ export default class CommandService extends BaseService {
 			const haveChanged = this.propsHaveChanged(command.runtime.props, newProps);
 
 			if (haveChanged) {
-				const previousEnabled = this.commandPreviousEnabledStates_[name];
-				command.runtime.props = newProps;
-				const newEnabled = this.isEnabled(name);
+				const previousState = this.commandPreviousStates_[name];
 
-				if (previousEnabled !== newEnabled) {
-					changedCommands[name] = { enabled: newEnabled };
+				command.runtime.props = newProps;
+
+				const newState:CommandState = {
+					enabled: this.isEnabled(name),
+					title: this.title(name),
+				};
+
+				if (!previousState || previousState.title !== newState.title || previousState.enabled !== newState.enabled) {
+					changedCommands[name] = newState;
 				}
 
-				this.commandPreviousEnabledStates_[name] = newEnabled;
+				this.commandPreviousStates_[name] = newState;
 			}
 		}
 
@@ -173,6 +186,7 @@ export default class CommandService extends BaseService {
 
 		runtime = Object.assign({}, runtime);
 		if (!runtime.isEnabled) runtime.isEnabled = () => true;
+		if (!runtime.title) runtime.title = () => null;
 		command.runtime = runtime;
 	}
 
@@ -215,6 +229,12 @@ export default class CommandService extends BaseService {
 		return command.runtime.props ? command.runtime.isEnabled(command.runtime.props ? command.runtime.props : {}) : true;
 	}
 
+	title(commandName:string):string {
+		const command = this.commandByName(commandName);
+		if (!command || !command.runtime) return null;
+		return command.runtime.props ? command.runtime.title(command.runtime.props ? command.runtime.props : {}) : null;
+	}
+
 	private extractExecuteArgs(command:Command, executeArgs:any) {
 		if (executeArgs) return executeArgs;
 		if (!command.runtime) throw new Error(`Command: ${command.declaration.name}: Runtime is not defined - make sure it has been registered.`);
@@ -232,6 +252,7 @@ export default class CommandService extends BaseService {
 			onClick: () => {
 				this.execute(commandName, this.extractExecuteArgs(command, executeArgs));
 			},
+			title: this.title(commandName),
 		};
 	}
 

@@ -3,6 +3,7 @@ const Note = require('lib/models/Note');
 const BaseModel = require('lib/BaseModel');
 const { _ } = require('lib/locale');
 const eventManager = require('../../../eventManager');
+const { time } = require('lib/time-utils');
 
 export const declaration:CommandDeclaration = {
 	name: 'editAlarm',
@@ -49,6 +50,11 @@ export const runtime = (comp:any):CommandRuntime => {
 					},
 				},
 			});
+		},
+		title: (props:any):string => {
+			const note = BaseModel.byId(props.notes, props.noteId);
+			if (!note || !note.todo_due) return null;
+			return time.formatMsToLocal(note.todo_due);
 		},
 		isEnabled: (props:any):boolean => {
 			const { notes, noteId } = props;
