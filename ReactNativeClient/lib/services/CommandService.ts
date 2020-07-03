@@ -1,5 +1,5 @@
 const BaseService = require('lib/services/BaseService');
-const eventManager = require('../../eventManager');
+const eventManager = require('lib/eventManager');
 
 export interface CommandRuntime {
 	execute(props:any):void
