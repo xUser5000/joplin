@@ -6,8 +6,6 @@ const { time } = require('lib/time-utils.js');
 const { reg } = require('lib/registry.js');
 
 const commandsWithDependencies = [
-	require('../commands/startExternalEditing'),
-	require('../commands/stopExternalEditing'),
 	require('../commands/showLocalSearch'),
 	require('../commands/focusElementNoteTitle'),
 	require('../commands/focusElementNoteBody'),
@@ -98,75 +96,6 @@ export default function useWindowCommandHandler(dependencies:HookDependencies) {
 			if (!windowCommand) return;
 
 			throw new Error(`Calling NoteEditor::useWindowCommandHandler:${windowCommand.name}`);
-
-			// const command = windowCommand;
-
-			// if (!command || !formNote) return;
-
-			// reg.logger().warn('NoteEditor::useWindowCommandHandler:', command);
-
-			// const editorCmd: EditorCommand = { name: '', value: command.value };
-			// let fn: Function = null;
-
-			// // These commands can be forwarded directly to the note body editor
-			// // without transformation.
-			// const directMapCommands = [
-			// 	'textCode',
-			// 	'textBold',
-			// 	'textItalic',
-			// 	'textLink',
-			// 	'attachFile',
-			// 	'textNumberedList',
-			// 	'textBulletedList',
-			// 	'textCheckbox',
-			// 	'textHeading',
-			// 	'textHorizontalRule',
-			// ];
-
-			// if (directMapCommands.includes(command.name)) {
-			// 	CommandService.instance().execute(command.name, { value: command.value });
-			// 	dispatch({
-			// 		type: 'WINDOW_COMMAND',
-			// 		name: null,
-			// 	});
-			// 	return;
-
-			// } else if (command.name === 'insertTemplate') {
-			// 	editorCmd.name = 'insertText';
-			// 	editorCmd.value = TemplateUtils.render(command.value);
-			// }
-
-			// // if (command.name === 'focusElement' && command.target === 'noteTitle') {
-			// // 	fn = () => {
-			// // 		if (!titleInputRef.current) return;
-			// // 		titleInputRef.current.focus();
-			// // 	};
-			// // }
-
-			// // if (command.name === 'focusElement' && command.target === 'noteBody') {
-			// // 	editorCmd.name = 'focus';
-			// // }
-
-			// reg.logger().debug('NoteEditor::useWindowCommandHandler: Dispatch:', editorCmd, fn);
-
-			// if (!editorCmd.name && !fn) return;
-
-			// dispatch({
-			// 	type: 'WINDOW_COMMAND',
-			// 	name: null,
-			// });
-
-			// requestAnimationFrame(() => {
-			// 	if (fn) {
-			// 		fn();
-			// 	} else {
-			// 		if (!editorRef.current.execCommand) {
-			// 			reg.logger().warn('Received command, but editor cannot execute commands', editorCmd);
-			// 		} else {
-			// 			editorRef.current.execCommand(editorCmd);
-			// 		}
-			// 	}
-			// });
 		}
 
 		processCommand();

@@ -126,22 +126,7 @@ class HeaderComponent extends React.Component {
 	async doCommand(command) {
 		if (!command) return;
 
-		let commandProcessed = true;
-
 		console.warn('Header.doCommand', command);
-
-		// if (command.name === 'focusSearch' && this.searchElement_) {
-		// 	this.searchElement_.focus();
-		// } else {
-		// 	commandProcessed = false;
-		// }
-
-		// if (commandProcessed) {
-		// 	this.props.dispatch({
-		// 		type: 'WINDOW_COMMAND',
-		// 		name: null,
-		// 	});
-		// }
 	}
 
 	back_click() {

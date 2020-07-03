@@ -44,15 +44,6 @@ interface CommandByNameOptions {
 	runtimeMustBeRegistered?:boolean,
 }
 
-interface CommandToToolbarButtonOptions {
-	executeArgs?:any,
-	isEnabledArgs?:any,
-}
-
-interface CommandToMenuItemOptions {
-	executeArgs?:any,
-}
-
 interface CommandEnabledStates {
 	[key:string]: boolean
 }
@@ -133,7 +124,7 @@ export default class CommandService extends BaseService {
 		const command = this.commands_[name];
 
 		if (!command) {
-			if (options.mustExist) throw new Error(`No such command: ${name}`);
+			if (options.mustExist) throw new Error(`Command not found: ${name}. Make sure the declaration has been registered.`);
 			return null;
 		}
 
@@ -187,7 +178,7 @@ export default class CommandService extends BaseService {
 		console.info('CommandService::unregisterRuntime:', commandName);
 
 		const command = this.commandByName(commandName, { mustExist: false });
-		if (!command || !command.runtime) return; // throw new Error(`Trying to unregister a runtime that has not been registered: ${commandName}`);
+		if (!command || !command.runtime) return;
 		delete command.runtime;
 	}
 
@@ -195,8 +186,13 @@ export default class CommandService extends BaseService {
 		console.info('CommandService::execute:', commandName, args);
 
 		const command = this.commandByName(commandName);
-		// if (!command.runtime.isEnabled()) return;
 		command.runtime.execute(args ? args : {});
+	}
+
+	scheduleExecute(commandName:string, args:any = null) {
+		setTimeout(() => {
+			this.execute(commandName, args);
+		}, 10);
 	}
 
 	isEnabled(commandName:string):boolean {
@@ -205,13 +201,14 @@ export default class CommandService extends BaseService {
 		return command.runtime.props ? command.runtime.isEnabled(command.runtime.props ? command.runtime.props : {}) : true;
 	}
 
-	private extractExecuteArgs(command:Command, options:CommandToToolbarButtonOptions | CommandToMenuItemOptions) {
-		if (options && ('executeArgs' in options)) return options.executeArgs;
+	private extractExecuteArgs(command:Command, executeArgs:any) {
+		if (executeArgs) return executeArgs;
+		if (!command.runtime) throw new Error(`Command: ${command.declaration.name}: Runtime is not defined - make sure it has been registered.`);
 		if (command.runtime.props) return command.runtime.props;
 		return {};
 	}
 
-	commandToToolbarButton(commandName:string, options:CommandToToolbarButtonOptions = null) {
+	commandToToolbarButton(commandName:string, executeArgs:any = null) {
 		const command = this.commandByName(commandName, { runtimeMustBeRegistered: true });
 
 		return {
@@ -219,20 +216,19 @@ export default class CommandService extends BaseService {
 			iconName: command.declaration.iconName,
 			enabled: this.isEnabled(commandName),
 			onClick: () => {
-				this.execute(commandName, this.extractExecuteArgs(command, options));
-				// command.runtime.execute(this.extractExecuteArgs(command, options));
+				this.execute(commandName, this.extractExecuteArgs(command, executeArgs));
 			},
 		};
 	}
 
-	commandToMenuItem(commandName:string, accelerator:string = null, options:CommandToMenuItemOptions = null) {
+	commandToMenuItem(commandName:string, accelerator:string = null, executeArgs:any = null) {
 		const command = this.commandByName(commandName);
 
 		const item:any = {
 			id: command.declaration.name,
 			label: command.declaration.label(),
 			click: () => {
-				this.execute(commandName, this.extractExecuteArgs(command, options));
+				this.execute(commandName, this.extractExecuteArgs(command, executeArgs));
 			},
 		};
 

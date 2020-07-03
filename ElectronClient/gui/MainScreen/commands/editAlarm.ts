@@ -54,6 +54,7 @@ export const runtime = (comp:any):CommandRuntime => {
 			const { notes, noteId } = props;
 			if (!noteId) return false;
 			const note = BaseModel.byId(notes, noteId);
+			if (!note) return false;
 			return !!note.is_todo && !note.todo_completed;
 		},
 		mapStateToProps: (state:any):any => {

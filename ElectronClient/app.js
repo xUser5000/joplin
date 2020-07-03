@@ -33,6 +33,7 @@ const TemplateUtils = require('lib/TemplateUtils');
 const CssUtils = require('lib/CssUtils');
 
 const commands = [
+	require('./gui/Header/commands/focusSearch'),
 	require('./gui/MainScreen/commands/editAlarm'),
 	require('./gui/MainScreen/commands/exportPdf'),
 	require('./gui/MainScreen/commands/hideModalMessage'),
@@ -53,19 +54,23 @@ const commands = [
 	require('./gui/MainScreen/commands/toggleNoteList'),
 	require('./gui/MainScreen/commands/toggleSidebar'),
 	require('./gui/MainScreen/commands/toggleVisiblePanes'),
-	require('./gui/Header/commands/focusSearch'),
-	require('./gui/NoteEditor/commands/startExternalEditing'),
-	require('./gui/NoteEditor/commands/stopExternalEditing'),
-	require('./gui/NoteEditor/commands/showLocalSearch'),
-	require('./gui/SideBar/commands/focusElementSideBar'),
-	require('./gui/NoteList/commands/focusElementNoteList'),
-	require('./gui/NoteEditor/commands/focusElementNoteTitle'),
 	require('./gui/NoteEditor/commands/focusElementNoteBody'),
-	require('./commands/focusElement'),
+	require('./gui/NoteEditor/commands/focusElementNoteTitle'),
+	require('./gui/NoteEditor/commands/showLocalSearch'),
+	require('./gui/NoteEditor/commands/showRevisions'),
+	require('./gui/NoteList/commands/focusElementNoteList'),
+	require('./gui/SideBar/commands/focusElementSideBar'),
 ];
 
+// Commands that are not tied to any particular component.
+// The runtime for these commands can be loaded when the app starts.
 const globalCommands = [
+	require('./commands/focusElement'),
+	require('./commands/startExternalEditing'),
+	require('./commands/stopExternalEditing'),
 	require('lib/commands/synchronize'),
+	require('lib/commands/historyBackward'),
+	require('lib/commands/historyForward'),
 ];
 
 const editorCommandDeclarations = require('./gui/NoteEditor/commands/editorCommandDeclarations').default;
@@ -383,14 +388,6 @@ class Application extends BaseApplication {
 		this.lastMenuScreen_ = null;
 		await this.updateMenu(screen);
 	}
-
-	// focusElement_(target) {
-	// 	this.dispatch({
-	// 		type: 'WINDOW_COMMAND',
-	// 		name: 'focusElement',
-	// 		target: target,
-	// 	});
-	// }
 
 	async updateMenu(screen) {
 		if (this.lastMenuScreen_ === screen) return;

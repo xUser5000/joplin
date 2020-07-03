@@ -3,9 +3,7 @@ import CommandService from '../../lib/services/CommandService';
 const { connect } = require('react-redux');
 const { buildStyle } = require('lib/theme');
 const Toolbar = require('../Toolbar.min.js');
-// const Note = require('lib/models/Note');
 const Folder = require('lib/models/Folder');
-// const { time } = require('lib/time-utils.js');
 const { _ } = require('lib/locale');
 const { substrWithEllipsis } = require('lib/string-utils');
 
@@ -38,35 +36,19 @@ function styles_(props:NoteToolbarProps) {
 }
 
 function useToolbarItems(props:NoteToolbarProps) {
-	const { note, folders, watchedNoteFiles, notesParentType, backwardHistoryNotes, forwardHistoryNotes } = props;
+	const { note, folders, watchedNoteFiles, notesParentType } = props;
 
 	const toolbarItems = [];
 
 	const selectedNoteFolder = Folder.byId(folders, note.parent_id);
 
-	toolbarItems.push({
-		tooltip: _('Back'),
-		iconName: 'fa-arrow-left',
-		enabled: (backwardHistoryNotes.length > 0),
-		onClick: () => {
-			if (!backwardHistoryNotes.length) return;
-			props.dispatch({
-				type: 'HISTORY_BACKWARD',
-			});
-		},
-	});
+	toolbarItems.push(
+		CommandService.instance().commandToToolbarButton('historyBackward')
+	);
 
-	toolbarItems.push({
-		tooltip: _('Forward'),
-		iconName: 'fa-arrow-right',
-		enabled: (forwardHistoryNotes.length > 0),
-		onClick: () => {
-			if (!forwardHistoryNotes.length) return;
-			props.dispatch({
-				type: 'HISTORY_FORWARD',
-			});
-		},
-	});
+	toolbarItems.push(
+		CommandService.instance().commandToToolbarButton('historyForward')
+	);
 
 	if (selectedNoteFolder && ['Search', 'Tag', 'SmartFilter'].includes(notesParentType)) {
 		toolbarItems.push({
@@ -91,22 +73,6 @@ function useToolbarItems(props:NoteToolbarProps) {
 	}
 
 	toolbarItems.push(CommandService.instance().commandToToolbarButton('editAlarm'));
-
-	// if (note.is_todo) {
-	// 	const item:any = {
-	// 		iconName: 'fa-clock',
-	// 		enabled: !note.todo_completed,
-	// 		onClick: () => {
-	// 			onButtonClick({ name: 'setAlarm' });
-	// 		},
-	// 	};
-	// 	if (Note.needAlarm(note)) {
-	// 		item.title = time.formatMsToLocal(note.todo_due);
-	// 	} else {
-	// 		item.tooltip = _('Set alarm');
-	// 	}
-	// 	toolbarItems.push(item);
-	// }
 
 	toolbarItems.push(CommandService.instance().commandToToolbarButton('setTags'));
 

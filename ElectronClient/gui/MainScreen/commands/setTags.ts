@@ -64,5 +64,11 @@ export const runtime = (comp:any):CommandRuntime => {
 				},
 			});
 		},
+		isEnabled: (props:any) => {
+			return !!props.noteIds.length;
+		},
+		mapStateToProps: (state:any) => {
+			return { noteIds: state.selectedNoteIds };
+		},
 	};
 };

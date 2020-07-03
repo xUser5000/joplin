@@ -222,35 +222,7 @@ class SideBarComponent extends React.Component {
 
 	doCommand(command) {
 		if (!command) return;
-
-		// const commandProcessed = true;
-
 		throw new Error('Called SideBar.doCommand');
-
-		// if (command.name === 'focusElement' && command.target === 'sideBar') {
-		// 	if (this.props.sidebarVisibility) {
-		// 		const item = this.selectedItem();
-		// 		if (item) {
-		// 			const anchorRef = this.anchorItemRefs[item.type][item.id];
-		// 			if (anchorRef) anchorRef.current.focus();
-		// 		} else {
-		// 			const anchorRef = this.firstAnchorItemRef('folder');
-		// 			console.info('anchorRef', anchorRef);
-		// 			if (anchorRef) anchorRef.current.focus();
-		// 		}
-		// 	}
-		// } else if (command.name === 'synchronize') {
-		// 	if (!this.props.syncStarted) this.sync_click();
-		// } else {
-		// 	commandProcessed = false;
-		// }
-
-		// if (commandProcessed) {
-		// 	this.props.dispatch({
-		// 		type: 'WINDOW_COMMAND',
-		// 		name: null,
-		// 	});
-		// }
 	}
 
 	componentWillUnmount() {
@@ -339,31 +311,7 @@ class SideBarComponent extends React.Component {
 		);
 
 		if (itemType === BaseModel.TYPE_FOLDER && !item.encryption_applied) {
-			menu.append(
-				new MenuItem({
-					label: _('Rename'),
-					click: async () => {
-						this.props.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'renameFolder',
-							id: itemId,
-						});
-					},
-				})
-			);
-
-			// menu.append(
-			// 	new MenuItem({
-			// 		label: _("Move"),
-			// 		click: async () => {
-			// 			this.props.dispatch({
-			// 				type: "WINDOW_COMMAND",
-			// 				name: "renameFolder",
-			// 				id: itemId,
-			// 			});
-			// 		},
-			// 	})
-			// );
+			menu.append(new MenuItem(CommandService.instance().commandToMenuItem('renameFolder', null, { folderId: itemId })));
 
 			menu.append(new MenuItem({ type: 'separator' }));
 
@@ -395,18 +343,9 @@ class SideBarComponent extends React.Component {
 		}
 
 		if (itemType === BaseModel.TYPE_TAG) {
-			menu.append(
-				new MenuItem({
-					label: _('Rename'),
-					click: async () => {
-						this.props.dispatch({
-							type: 'WINDOW_COMMAND',
-							name: 'renameTag',
-							id: itemId,
-						});
-					},
-				})
-			);
+			menu.append(new MenuItem(
+				CommandService.instance().commandToMenuItem('renameTag', null, { tagId: itemId })
+			));
 		}
 
 		menu.popup(bridge().window());
@@ -665,18 +604,8 @@ class SideBarComponent extends React.Component {
 
 			if (event.shiftKey) {
 				CommandService.instance().execute('focusElement', { target: 'noteBody' });
-				// this.props.dispatch({
-				// 	type: 'WINDOW_COMMAND',
-				// 	name: 'focusElement',
-				// 	target: 'noteBody',
-				// });
 			} else {
 				CommandService.instance().execute('focusElement', { target: 'noteList' });
-				// this.props.dispatch({
-				// 	type: 'WINDOW_COMMAND',
-				// 	name: 'focusElement',
-				// 	target: 'noteList',
-				// });
 			}
 		}
 
